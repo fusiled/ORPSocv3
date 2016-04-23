@@ -287,17 +287,17 @@ module mor1kx_lsu_cappuccino
 
    // Big endian bus mapping
    always @(*)
-     case (ctrl_lsu_length_i)
-       2'b00: // byte access
-	 case(ctrl_lsu_adr_i[1:0])
-	   2'b00:
-	     dbus_bsel = 4'b1000;
-	   2'b01:
-	     dbus_bsel = 4'b0100;
-	   2'b10:
-	     dbus_bsel = 4'b0010;
-	   2'b11:
-	     dbus_bsel = 4'b0001;
+    case (ctrl_lsu_length_i)
+      2'b00: // byte access
+      case(ctrl_lsu_adr_i[1:0])
+        2'b00:
+	      dbus_bsel = 4'b1000;
+	      2'b01:
+        dbus_bsel = 4'b0100;
+	      2'b10:
+	      dbus_bsel = 4'b0010;
+	      2'b11:
+	      dbus_bsel = 4'b0001;
 	 endcase
        2'b01: // halfword access
 	    case(ctrl_lsu_adr_i[1])

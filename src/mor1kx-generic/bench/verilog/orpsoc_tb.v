@@ -2,29 +2,10 @@ module orpsoc_tb;
 
    vlog_tb_utils vlog_tb_utils0();
 
-    ////////////////////////////////////////////////////////////////////////
-    //
-    // JTAG VPI interface
-    //
-    ////////////////////////////////////////////////////////////////////////
-
     wire tms;
     wire tck;
     wire tdi;
     wire tdo;
-
-    reg enable_jtag_vpi;
-    initial enable_jtag_vpi = $test$plusargs("enable_jtag_vpi");
-
-    jtag_vpi jtag_vpi0
-    (
-        .tms		(tms),
-        .tck		(tck),
-        .tdi		(tdi),
-        .tdo		(tdo),
-        .enable		(enable_jtag_vpi),
-        .init_done	(orpsoc_tb.dut.wb_rst)
-    );
 
    ////////////////////////////////////////////////////////////////////////
    //
@@ -57,7 +38,7 @@ module orpsoc_tb;
    reg syst_clk = 1;
    reg syst_rst = 1;
 
-   always #5 syst_clk <= ~syst_clk;
+   always #1 syst_clk <= ~syst_clk;
    initial #100 syst_rst <= 0;
 
    ////////////////////////////////////////////////////////////////////////
@@ -72,6 +53,13 @@ module orpsoc_tb;
    // DUT
    //
    ////////////////////////////////////////////////////////////////////////
+
+   initial
+ begin
+    $dumpfile("trace.vcd");
+    $dumpvars(0,orpsoc_tb);
+ end
+
    orpsoc_top
    dut
      (.wb_clk_i (syst_clk),

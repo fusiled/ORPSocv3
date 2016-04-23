@@ -1,0 +1,26 @@
+ROOT_DIR=$PWD
+BUILDIR=$1
+
+
+
+cd $PWD
+
+rm -d -r $BUILDIR
+
+mkdir $BUILDIR
+
+cd $BUILDIR
+
+iverilog-vpi --name=elf-loader -lelf -I$ABSPATH/src/elf-loader $ROOT_DIR/src/elf-loader/elf-loader.c $ROOT_DIR/src/elf-loader/vpi_wrapper.c
+
+iverilog-vpi --name=jtag_vpi-r2 $ROOT_DIR/src/jtag_vpi-r2/jtag_vpi.c
+
+iverilog -s orpsoc_tb -c $ROOT_DIR/file_list.scr -o fusesoc.elf -DSIM
+
+if [ -z $2 ]; then
+	ELF_PATH=$ROOT_DIR/def/test.out
+else
+	ELF_PATH=$ROOT_DIR/$1
+fi
+
+vvp -n -M. -l icarus.log -melf-loader -mjtag_vpi-r2 fusesoc.elf -lxt2 +elf_load=$ELF_PATH

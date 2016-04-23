@@ -326,7 +326,10 @@ module mor1kx_dcache
    // Acknowledge to the SPR bus.
    assign spr_bus_ack_o = invalidate_ack;
 
-   /*
+   /*-----------------------------------------------------------------------------------
+   -------------------------------------------------------------------------------------
+   --------------------------------------IMP--------------------------------------------
+   *************************************************************************************
     * Cache FSM
     * Starts in IDLE.
     * State changes between READ and WRITE happens cpu_we_i is asserted or not.
@@ -386,29 +389,29 @@ module mor1kx_dcache
 	   end
 
 	   READ: begin
-	      if (dc_access_i | cpu_we_i & dc_enable_i) begin
-		 if (!hit & cpu_req_i & !write_pending & refill_allowed) begin
-		    refill_valid <= 0;
-		    refill_valid_r <= 0;
+	    if (dc_access_i | cpu_we_i & dc_enable_i) begin
+		    if (!hit & cpu_req_i & !write_pending & refill_allowed) begin
+		      refill_valid <= 0;
+		      refill_valid_r <= 0;
 
-		    // Store the LRU information for correct replacement
+		      // Store the LRU information for correct replacement
                     // on refill. Always one when only one way.
-                    tag_save_lru <= (OPTION_DCACHE_WAYS==1) | lru;
+          tag_save_lru <= (OPTION_DCACHE_WAYS==1) | lru;
 
-		    for (w1 = 0; w1 < OPTION_DCACHE_WAYS; w1 = w1 + 1) begin
-		       tag_way_save[w1] <= tag_way_out[w1];
+		      for (w1 = 0; w1 < OPTION_DCACHE_WAYS; w1 = w1 + 1) begin
+		        tag_way_save[w1] <= tag_way_out[w1];
+		      end
+
+		      state <= REFILL;
+		    end else if (cpu_we_i | write_pending) begin
+		      state <= WRITE;
+		    end else if (invalidate) begin
+		      state <= IDLE;
 		    end
-
-		    state <= REFILL;
-		 end else if (cpu_we_i | write_pending) begin
-		    state <= WRITE;
-		 end else if (invalidate) begin
+      end else if (!dc_enable_i | invalidate) begin
 		    state <= IDLE;
-		 end
-	      end else if (!dc_enable_i | invalidate) begin
-		 state <= IDLE;
-	      end
-	   end
+	    end
+    end
 
 	   REFILL: begin
 	      if (we_i) begin

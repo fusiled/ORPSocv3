@@ -21,7 +21,7 @@ module mor1kx
 
     parameter OPTION_CPU0		= "CAPPUCCINO",
 
-    parameter FEATURE_DATACACHE		= "NONE",
+    parameter FEATURE_DATACACHE		= "YES",
     parameter OPTION_DCACHE_BLOCK_WIDTH	= 5,
     parameter OPTION_DCACHE_SET_WIDTH	= 9,
     parameter OPTION_DCACHE_WAYS	= 2,
@@ -31,7 +31,7 @@ module mor1kx
     parameter FEATURE_DMMU_HW_TLB_RELOAD = "NONE",
     parameter OPTION_DMMU_SET_WIDTH	= 6,
     parameter OPTION_DMMU_WAYS		= 1,
-    parameter FEATURE_INSTRUCTIONCACHE	= "NONE",
+    parameter FEATURE_INSTRUCTIONCACHE	= "YES",
     parameter OPTION_ICACHE_BLOCK_WIDTH	= 5,
     parameter OPTION_ICACHE_SET_WIDTH	= 9,
     parameter OPTION_ICACHE_WAYS	= 2,

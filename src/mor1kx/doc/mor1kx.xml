@@ -1,0 +1,954 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?asciidoc-toc?>
+<?asciidoc-numbered?>
+
+<book lang="en">
+<bookinfo>
+    <title>mor1kx IP core specification</title>
+
+</bookinfo>
+<chapter id="_introduction">
+<title>Introduction</title>
+<simpara>This document describes the mor1kx processor block and its various configurable
+components. The core is an implementation of an OpenRISC 1000 compliant
+processor which is highly configurable and contains multiple pipeline
+implementations along with a configurable set of peripherals such as caches,
+timers, debug and bus interfaces. This documentation will contain a section
+detailing each optional block such as pipeline, caches, bus interface etc. It
+can outline as much implementation detail as it wants but should ultimately
+provide information to users on how to program and use the peripheral, or what
+to expect during execution of software on a particular configuration.</simpara>
+<sidebar>
+<title>Document Status</title>
+<simpara>This documentation is far from complete. It is expected that the documentation
+will become more extensive over time.</simpara>
+</sidebar>
+<section id="_openrisc_family">
+<title>OpenRISC Family</title>
+<simpara><indexterm>
+  <primary>OpenRISC</primary><secondary>Family</secondary>
+</indexterm>
+<indexterm>
+  <primary>Family</primary>
+</indexterm>
+OpenRISC 1000 is architecture for a family of free, open source RISC processor
+cores. As architecture, OpenRISC 1000 allows for a spectrum of chip and
+system implementations at a variety of price/performance points for a range of
+applications. It is a 32/64-bit load and store RISC architecture designed with
+emphasis on performance, simplicity, low power requirements, scalability and
+versatility. OpenRISC 1000 architecture targets medium and high performance
+networking, embedded, automotive and portable computer environments.</simpara>
+</section>
+<section id="_mor1kx_cpu">
+<title>mor1kx CPU</title>
+<simpara>The mor1kx implementation was developed in order to provide a better platform
+for processor component development than previous implementations. The goal of
+the implementation is to provide a greater level of flexibility in terms of
+implementation trade-offs such as area and performance.</simpara>
+<simpara>The blocks within the core have been designed for maximum re-use within
+different configurations. Based on this, different pipeline implementations are
+a major focus of the core. With this, the core should be very useful for
+developers and users alike. For developers as a base for either
+high-performance or low-overhead pipeline implementations based on re-usable
+components eg. decode and ALU block. For users as a wider variety of
+capabilities should be available to suit the processor&#8217;s use case.</simpara>
+</section>
+</chapter>
+<chapter id="_implementation_overview">
+<title>Implementation Overview</title>
+<simpara>The implementation is heavily modular, with each particular functional block
+of the design being contained within its own Verilog module or modules.</simpara>
+<simpara>The implementation configuration makes use of Verilog parameters. There should
+be no configuration performed with the use of Verilog defines.</simpara>
+<section id="_hierarchy">
+<title>Hierarchy</title>
+<simpara>The top few levels of hierarchy are as follows</simpara>
+<variablelist>
+<varlistentry>
+<term>
+mor1kx
+</term>
+<listitem>
+<simpara>
+Top-level, instantiatng bus interfaces and CPU top-level
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+mor1kx_bus_if_xx - Bus interface, depending on desired bus standard
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_cpu - Pipeline implementation wrapper
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+mor1kx_cpu_xx - Pipeline implementation, depending on configuration
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+mor1kx_fetch_xx - Pipeline-implementation-dependent fetch stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+mor1kx_icache  - Instruction cache implementation
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_immu  - Instruction memory management unit implementation
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_decode - Generic decode stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_execute_alu - Generic ALU for execute stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_lsu_xx - Pipeline-implementation-dependent load/store unit
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+mor1kx_dcache  - Data cache implementation
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_dmmu  - Data memory management unit implementation
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_wb_mux_xx - Pipeline-implementation-dependent writeback stage mux
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_rf_xx - Pipeline-implementation-dependent register file
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+mor1kx_ctrl_xx - Pipeline-implementation-dependent control stage, usually containing features such as tick timer, interrupts etc.
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+</listitem>
+</varlistentry>
+</variablelist>
+<simpara>The above hierarchy is not always the same for each pipeline implementation
+(from <emphasis>mor1kx_cpu_xx</emphasis> level down) but as a good indicator as to how the
+existing pipeline implementations have been structured.</simpara>
+</section>
+<section id="_coding_style">
+<title>Coding Style</title>
+<simpara>The coding style is a relatively simple Verilog style and should be adhered to
+for any future development. All of the following detail how the existing code
+base has been implemented, and it should be realtively easy to continue in that
+style, but if in doubt, the following details some of the rules:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+module names should be prefixed with <emphasis>mor1kx</emphasis> and be in lowercase and stored in a source file of the same name plus the standard verilog suffix, <emphasis>.v</emphasis>.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+port names should have their direction abbreviation appended to the name
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+E.g the instruction bus address output should be ibus_adr_o
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+The only exceptions are the clock and reset ports, commonly referred to as <emphasis>clk</emphasis> and <emphasis>rst</emphasis> in the Verilog, and don&#8217;t really require direction suffixes. The only exception is if a clock or reset generation module is outputting one of these, in which case it should have _o appended, otherwise for clock and reset inputs it can be inferred that they are inputs from the absence of _o.
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Parameter names should be in UPPERCASE, with parameter values, if strings, also in uppercase.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Verilog reg and wire names should be named usefully, in lowercase, and make use of underscores in the name.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+There should be no reason to alter the mor1kx-defines.v or mor1kx-sprs.v files unless it is expanding upon or fixing what is already there. <emphasis>No new class of defines controlling implementation should be added</emphasis> (use parameters instead!) Those files are only for storing architectural information in Verilog format, which can then be used in the design.
+</simpara>
+</listitem>
+</itemizedlist>
+<simpara>There has been heavy use of the Emacs Verilog mode auto-implement and wire
+features throughout the code. This is a useful tool and it would be useful to
+stick to using this for future pipeline implementations, to speed up the
+tedious task of wiring up new blocks.</simpara>
+</section>
+<section id="_architecture_compliance">
+<title>Architecture compliance</title>
+<simpara>The mor1kx aims to be fully OpenRISC 1000 compliant. It implements the VR2,
+AVR and ISRs (still largely unused). The current OR1K architecture version
+supported is 1.0.</simpara>
+<section id="_version_register_2_definition">
+<title>Version Register 2 definition</title>
+<simpara>Bits 23:0 of the VR2 are implementation-specific. They are defined, for mor1kx,
+to be 3 bytes, interpreted as 3 unsigned 8-bit integers, as the following:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+23:16 - Major version number
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+15:8 - Minor version number
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+7:0 - Pipeline identifier
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Where this pipeline identifier means
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+1 - Cappuccino
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+2 - Espresso
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+3 - Pronto Espresso
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>However, the mor1kx does not implement the following at present:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+arithmetic exception control/status registers (AECR, AESR)
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+l.muld[u] and thus access to full 64-bit result as there is no MAC unit
+</simpara>
+</listitem>
+</itemizedlist>
+</section>
+</section>
+</chapter>
+<part id="_cpu_components">
+<title>CPU Components</title>
+<simpara>This section will outline each of the CPU component modules.</simpara>
+<chapter id="_cpu_pipeline_implementations">
+<title>CPU Pipeline Implementations</title>
+<section id="_available_implementations">
+<title>Available Implementations</title>
+<simpara>At present the following pipeline implementations are available. These
+combine various of the components, outlined in a following section, to
+implement the bulk of the processor.</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+cappuccino - 6 stage, single issue, delay slot, debug unit, timers, PIC,
+               tightly coupled cache, MMU, ORBIS32 support
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+espresso - 2 stage, single issue, delay slot, debug unit, timers, PIC, ORBIS32 support
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+pronto espresso - 2 stage, single issue, no delay slot, debug unit, timers, PIC, ORBIS32 support
+</simpara>
+</listitem>
+</itemizedlist>
+</section>
+<section id="_cappuccino_pipeline">
+<title>Cappuccino pipeline</title>
+<simpara>A 6 stage pipeline. (address, fetch, decode, execute, control/memory and writeback)</simpara>
+<simpara>Caches supported (optional).</simpara>
+<simpara>MMUs supported (optional).</simpara>
+<simpara>It has a delay slot on jump and branch instructions.</simpara>
+<simpara>It features the EVBAR.</simpara>
+<simpara>Pipeline consists of the following modules:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Fetch:
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_icache">mor1kx_icache</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_immu">mor1kx_immu</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_fetch_cappuccino">mor1kx_fetch_cappuccino</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Decode
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_decode">mor1kx_decode</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Execute stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_execute_alu">mor1kx_execute_alu</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_wb_mux_cappuccino">mor1kx_wb_mux_cappuccino</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_rf_cappuccino">mor1kx_rf_cappuccino</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_execute_ctrl_cappuccino">mor1kx_execute_ctrl_cappuccino</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Control/memory stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_dcache">mor1kx_dcache</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_dmmu">mor1kx_dmmu</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_lsu_cappuccino">mor1kx_lsu_cappuccino</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_ctrl_cappuccino">mor1kx_ctrl_cappuccino</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_ctrl_branch_cappuccino">mor1kx_ctrl_branch_cappuccino</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>The following sections outline the pipeline-specific modules</simpara>
+<section id="mor1kx_ctrl_branch_cappuccino">
+<title>mor1kx_ctrl_branch_cappuccino</title>
+<simpara>This is the pipelines branch control unit, selecting the jump/branch address
+and opcode input from execute stage, with flag input from control stage.
+Indication of whether a branch needs to be evaluated (based on flag) comes
+from the control stage.</simpara>
+<simpara>The block then outputs the appropriate indication of whether a branch is going
+to occur and the target address to the fetch stage.</simpara>
+<simpara>It is wholly combinatorial.</simpara>
+</section>
+<section id="mor1kx_ctrl_cappuccino">
+<title>mor1kx_ctrl_cappuccino</title>
+<simpara>This module contains a lot of the core functionality of the pipeline, such as:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+SPRs (NPC, PPC, etc.) and accesses to them
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+PIC
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Debug unit
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Tick timer
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Pipeline control signals
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Advance/stall signaling to each pipeline stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Exception handling
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>It&#8217;s in a big monolithic file but perhaps things like the PIC and tick timer
+could be split out and made genering among pipeline implementations.</simpara>
+</section>
+<section id="mor1kx_execute_ctrl_cappuccino">
+<title>mor1kx_execute_ctrl_cappuccino</title>
+<simpara>Determine the status of execute-stage units in play (ALU or LSU) and:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Determine when they&#8217;re done
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Control the write-enable to the register file for any result
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Correctly propagate exception signals from either execute or earlier stages
+</simpara>
+</listitem>
+</itemizedlist>
+</section>
+<section id="mor1kx_fetch_cappuccino">
+<title>mor1kx_fetch_cappuccino</title>
+<simpara>Fetch stage, tightly coupled with instruction cache.</simpara>
+</section>
+<section id="mor1kx_lsu_cappuccino">
+<title>mor1kx_lsu_cappuccino</title>
+<simpara>Load/store unit.</simpara>
+<simpara>Performs accesses of the generic bus which may or may not be then going to
+a data cache, and finally out onto the bus via the selected bus interface.</simpara>
+<simpara>Is 32-bit specific.</simpara>
+<simpara>Combinatorial outputs to pipeline control logic to reduce latency, may
+introduce long paths effecting timing, though.</simpara>
+<simpara>Handles sign extension if load/store requires it.
+Generates alignment exception, and handles bus error exception back to
+the mor1kx_execute_ctrl_cappuccino module.</simpara>
+</section>
+<section id="mor1kx_rf_cappuccino">
+<title>mor1kx_rf_cappuccino</title>
+<simpara>Register file for the pipeline. 2 lots of 32 general purpose registers (GPRs.)</simpara>
+<simpara>Handles forwarding from control/memory and writeback to execute stage.</simpara>
+<simpara>Instantiates a RAM for each of the two register files (<emphasis>mor1kx_rf_ram</emphasis> module.)</simpara>
+</section>
+<section id="mor1kx_wb_mux_cappuccino">
+<title>mor1kx_wb_mux_cappuccino</title>
+<simpara>Writeback stage mux. Inputs are ALU result, LSU result, SPR value for l.mfspr
+instruction. Generates link address for jump-and-link instructions.</simpara>
+</section>
+</section>
+<section id="_espresso_pipeline">
+<title>Espresso pipeline</title>
+<simpara>The espresso pipeline essentially contains two stages: a fetch and "the-rest"
+stages. There is no registering in the decode stage, so the register outputting
+the fetched instruction from the fetch stage is what is used for the remainder
+of that instruction&#8217;s processing.</simpara>
+<simpara>No support for caches.</simpara>
+<simpara>It has a delay slot.</simpara>
+<simpara>Supports DSX bit in SR.</simpara>
+<simpara>Pipeline consists of the following modules:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Fetch:
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_fetch_espresso">mor1kx_fetch_espresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Decode
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_decode">mor1kx_decode</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Execute/memory stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_execute_alu">mor1kx_execute_alu</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_lsu_espresso">mor1kx_lsu_espresso</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_wb_mux_espresso">mor1kx_wb_mux_espresso</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_rf_espresso">mor1kx_rf_espresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Control stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_ctrl_espresso">mor1kx_ctrl_espresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>The following sections outline the pipeline-specific modules</simpara>
+<section id="mor1kx_fetch_espresso">
+<title>mor1kx_fetch_espresso</title>
+<simpara>This is the fetch stage for the espresso pipeline.</simpara>
+<simpara>It is tightly coupled with the control stage.</simpara>
+<simpara>The block attempts to stream in bursts from the bus interface.</simpara>
+<simpara>The block outputs register addresses for the next read from the RF.</simpara>
+</section>
+<section id="mor1kx_lsu_espresso">
+<title>mor1kx_lsu_espresso</title>
+<simpara>A LSU specific to the espresso pipeline. Its features are similar to the
+<link linkend="mor1kx_lsu_cappuccino">mor1kx_lsu_cappuccino</link> block.</simpara>
+</section>
+<section id="mor1kx_wb_mux_espresso">
+<title>mor1kx_wb_mux_espresso</title>
+<simpara>Writeback stage mux for the espresso pipeline. Similar to the
+<link linkend="mor1kx_wb_mux_cappuccino">mor1kx_wb_mux_cappuccino</link> block.</simpara>
+</section>
+<section id="mor1kx_rf_espresso">
+<title>mor1kx_rf_espresso</title>
+<simpara>Register file for the espresso pipeline. Simlar to the
+<link linkend="mor1kx_rf_cappuccino">mor1kx_rf_cappuccino</link> block.</simpara>
+</section>
+<section id="mor1kx_ctrl_espresso">
+<title>mor1kx_ctrl_espresso</title>
+<simpara>This module contains a lot of the core functionality of the pipeline, such as:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+SPRs (NPC, PPC, etc.) and accesses to them
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+PIC
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Debug unit
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Tick timer
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Pipeline control signals
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Advance/stall signaling to each pipeline stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Exception handling
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Branch indication to fetch stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Register file write enable
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+</section>
+</section>
+<section id="_pronto_espresso_pipeline">
+<title>Pronto Espresso pipeline</title>
+<simpara>The pronto espresso pipeline essentially contains two stages: a fetch and "the-rest"
+stages. It is based on the Espresso pipeline, but does not have a delay slot on jumps
+and branches. As such, it reuses a lot of Espresso&#8217;s pipeline.</simpara>
+<simpara>No support for caches.</simpara>
+<simpara>It has <emphasis>no</emphasis> delay slot.</simpara>
+<simpara>Pipeline consists of the following modules:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Fetch:
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_fetch_prontoespresso">mor1kx_fetch_prontoespresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Decode
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_decode">mor1kx_decode</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Execute/memory stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_execute_alu">mor1kx_execute_alu</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_lsu_espresso">mor1kx_lsu_espresso</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_wb_mux_espresso">mor1kx_wb_mux_espresso</link>
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+<link linkend="mor1kx_rf_espresso">mor1kx_rf_espresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Control stage
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+<link linkend="mor1kx_ctrl_prontoespresso">mor1kx_ctrl_prontoespresso</link>
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>The following sections outline the pipeline-specific modules</simpara>
+<section id="mor1kx_fetch_prontoespresso">
+<title>mor1kx_fetch_prontoespresso</title>
+<simpara>This is the fetch stage for the pronto espresso pipeline</simpara>
+<simpara>It is tightly coupled with the control stage.</simpara>
+<simpara>The block attempts to stream in bursts from the bus interface.</simpara>
+<simpara>The block outputs register addresses for the next read from the RF.</simpara>
+<simpara>It takes into account that the pipeline does not support a delay slot on jumps/branches.</simpara>
+</section>
+<section id="mor1kx_ctrl_prontoespresso">
+<title>mor1kx_ctrl_prontoespresso</title>
+<simpara>This module contains a lot of the core functionality of the pipeline, such as:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+SPRs (NPC, PPC, etc.) and accesses to them
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+PIC
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Debug unit
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Tick timer
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Pipeline control signals
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Advance/stall signaling to each pipeline stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Exception handling
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Branch indication to fetch stage
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Register file write enable
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+<simpara>It is based on the espresso pipeline, however is modified in such a way as to make sure it doesn&#8217;t have a delay slot on branches.</simpara>
+</section>
+</section>
+</chapter>
+<chapter id="_components">
+<title>Components</title>
+<section id="mor1kx_bus_if_wb32">
+<title>mor1kx_bus_if_wb32</title>
+<simpara>This module is a Wishbone bus interface block and sits between the pipeline&#8217;s
+fetch and load/store units and the Wishbone bus.</simpara>
+<simpara>It is Wishbone version B3 compliant and can perform burst reads.</simpara>
+<simpara>At present there are two configurations of the block, one is "classic"
+configuration and the other is "B3 read bursting".</simpara>
+<simpara>The "classic" configuration performs all access as single cycle reads or
+writes to the bus.</simpara>
+<simpara>The "B3 read bursting" mode will perform burst reads over the bus, but writes
+are still single cycle accesses.</simpara>
+</section>
+<section id="mor1kx_cpu">
+<title>mor1kx_cpu</title>
+<simpara>The CPU pipeline wrapper layer. This selects the appropriate pipeline CPU
+implementation toplevel.</simpara>
+<simpara>Additionally, some signals intended to be used as hooks for monitor modules are
+provided.</simpara>
+</section>
+<section id="mor1kx_decode">
+<title>mor1kx_decode</title>
+<simpara>This is a generic OR1K decode stage module, which can ideally be reused by each
+CPU implementation.</simpara>
+<simpara>The module can either register the its decode output or be wholly combinatorial.</simpara>
+<simpara>It generates ALU, LSU and control operation signals for the remainder of the pipeline
+units. Exceptions caused in this stage (ie, illegal instruction, system call etc.) or
+earlier (fetch stage exceptions like bus error) are also generated or passed through.</simpara>
+</section>
+<section id="mor1kx_execute_alu">
+<title>mor1kx_execute_alu</title>
+<simpara>This is a generic ALU implementation. It contains all of the integer arithmetic and
+logical operations which are supported in the ORBIS32 instruction set.</simpara>
+<simpara>The following features are optional. All can be disabled, or enabled with the
+implementation options listed, if any:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Multiplier
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Three stage, three cycle, full 32-bit parallel multiplier
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Serial, 32-cycle serial multiplication implementation
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Simulation, single cycle multiplication, not advisable for synthesis
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Divider
+</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Serial, 32-cycle serial division implementation
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Simulation, single cycle division, not synthesisable
+</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>
+Shift-right-arithmetic
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Rotate right
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Shift instructions, logical shift left and right, and shift right arithmetic and rotate right can be chosen to be implemented in a single-cycle barrel shifter implementation or done serially to save implementation area.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Conditional move
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Find first and last <emphasis>1</emphasis>
+</simpara>
+</listitem>
+</itemizedlist>
+<simpara>The following is not yet supported:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>
+Add with carry
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+Sign extension instructions
+</simpara>
+</listitem>
+</itemizedlist>
+<simpara>The module also implements comparison logic for the set flag instructions.</simpara>
+</section>
+<section id="mor1kx_icache">
+<title>mor1kx_icache</title>
+<simpara>Instruction cache module.</simpara>
+</section>
+<section id="mor1kx_dcache">
+<title>mor1kx_dcache</title>
+<simpara>Data cache module.</simpara>
+</section>
+<section id="mor1kx_immu">
+<title>mor1kx_immu</title>
+<simpara>Instruction memory management module.</simpara>
+</section>
+<section id="mor1kx_dmmu">
+<title>mor1kx_dmmu</title>
+<simpara>Data memory management module.</simpara>
+</section>
+<section id="mor1kx_rf_ram">
+<title>mor1kx_rf_ram</title>
+</section>
+<section id="mor1kx_spram">
+<title>mor1kx_spram</title>
+<simpara>Generic single port ram with seperate read and write addresses.<?asciidoc-br?>
+Has explicit bypass logic to correctly present write-first behaviour on
+different platforms.</simpara>
+</section>
+<section id="mor1kx_dpram_sclk">
+<title>mor1kx_dpram_sclk</title>
+<simpara>Generic single clocked dual port ram.</simpara>
+</section>
+</chapter>
+</part>
+</book>

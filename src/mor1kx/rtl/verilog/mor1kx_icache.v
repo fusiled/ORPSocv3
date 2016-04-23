@@ -256,13 +256,13 @@ module mor1kx_icache
     * Cache FSM
     */
    integer w1;
-   always @(posedge clk `OR_ASYNC_RST) begin
-      refill_valid_r <= refill_valid;
-      spr_bus_ack_o <= 0;
-      case (state)
+  always @(posedge clk `OR_ASYNC_RST) begin
+    refill_valid_r <= refill_valid;
+    spr_bus_ack_o <= 0;
+    case (state)
 	IDLE: begin
-	   if (cpu_req_i)
-	     state <= READ;
+	  if (cpu_req_i)
+	    state <= READ;
 	end
 
 	READ: begin

@@ -24,12 +24,12 @@ module mor1kx_fetch_cappuccino
     parameter OPTION_RESET_PC = {{(OPTION_OPERAND_WIDTH-13){1'b0}},
 				 `OR1K_RESET_VECTOR,8'd0},
     parameter OPTION_RF_ADDR_WIDTH = 5,
-    parameter FEATURE_INSTRUCTIONCACHE = "NONE",
+    parameter FEATURE_INSTRUCTIONCACHE = "YES",
     parameter OPTION_ICACHE_BLOCK_WIDTH = 5,
     parameter OPTION_ICACHE_SET_WIDTH = 9,
     parameter OPTION_ICACHE_WAYS = 2,
     parameter OPTION_ICACHE_LIMIT_WIDTH = 32,
-    parameter FEATURE_IMMU = "NONE",
+    parameter FEATURE_IMMU = "YES",
     parameter FEATURE_IMMU_HW_TLB_RELOAD = "NONE",
     parameter OPTION_IMMU_SET_WIDTH = 6,
     parameter OPTION_IMMU_WAYS = 1
@@ -38,7 +38,7 @@ module mor1kx_fetch_cappuccino
     input 				  clk,
     input 				  rst,
 
-    // SPR interface
+    // SPR interface WISHBONE COMPLIANT?
     input [15:0] 			  spr_bus_addr_i,
     input 				  spr_bus_we_i,
     input 				  spr_bus_stb_i,

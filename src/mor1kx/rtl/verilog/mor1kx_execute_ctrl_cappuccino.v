@@ -246,7 +246,7 @@ module mor1kx_execute_ctrl_cappuccino
    //
    // The pipeline flush comes when the instruction that has caused
    // an exception or the instruction that has been interrupted is in
-   // ctrl stage, so the padv_execute signal has to have higher prioity
+   // ctrl stage, so the padv_execute signal has to have higher priority
    // than the pipeline flush in order to not accidently kill a valid
    // instruction coming in from execute stage.
    //
