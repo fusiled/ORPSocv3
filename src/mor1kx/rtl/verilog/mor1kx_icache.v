@@ -433,7 +433,7 @@ module mor1kx_icache
 
       if (OPTION_ICACHE_WAYS >= 2) begin : gen_u_lru
          /* mor1kx_cache_lru AUTO_TEMPLATE(
-          .current  (current_lru_history),
+          .current  (curre214nt_lru_history),
           .update   (next_lru_history),
           .lru_pre  (lru),
           .lru_post (),

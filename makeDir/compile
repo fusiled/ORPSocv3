@@ -19,8 +19,10 @@ iverilog -s orpsoc_tb -c $ROOT_DIR/file_list.scr -o fusesoc.elf -DSIM
 
 if [ -z $2 ]; then
 	ELF_PATH=$ROOT_DIR/def/test.out
+	echo "executing default $ELF_PATH"
 else
-	ELF_PATH=$ROOT_DIR/$1
+	ELF_PATH=$ROOT_DIR/$2
+	echo "executing passed file $ELF_PATH"
 fi
 
 vvp -n -M. -l icarus.log -melf-loader -mjtag_vpi-r2 fusesoc.elf -lxt2 +elf_load=$ELF_PATH

@@ -15,7 +15,7 @@
 module mor1kx_simple_dpram_sclk
   #(
     parameter ADDR_WIDTH = 32,
-    parameter DATA_WIDTH = 32,
+    parameter DATA_WIDTH = 2,
     parameter CLEAR_ON_INIT = 0,
     parameter ENABLE_BYPASS = 1
     )
@@ -55,10 +55,9 @@ if (ENABLE_BYPASS) begin : bypass_gen
    always @(posedge clk)
      if (waddr == raddr && we && re)
        bypass <= 1;
-     else if (re)
-       bypass <= 0;
+     else if (re) bypass <= 0;
 end else begin
-   assign dout = rdata;
+  assign dout = rdata;
 end
 endgenerate
 

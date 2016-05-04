@@ -1,4 +1,4 @@
-`timescale 10ns/10ns 
+//`timescale 10ns/10ns 
 
 module orpsoc_tb;
 

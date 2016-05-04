@@ -1,11 +1,13 @@
 MAKEDIR="makeDir"
 BUILDIR="build"
+EXECUTABLE=""
+SRC="def/test.c"
 
-compile:
-	bash $(MAKEDIR)/compile $(BUILDIR)
+synthesys: 
+	bash $(MAKEDIR)/compile $(BUILDIR) $(EXECUTABLE) 
 
-trace: compile
-	gtkwave $(BUILDIR)/trace.vcd
+trace: synthesys
+	gtkwave $(BUILDIR)/trace.vcd &
 
 clean:
 	rm -r $(BUILDIR) 
