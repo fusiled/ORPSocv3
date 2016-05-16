@@ -15,7 +15,7 @@
 module mor1kx_simple_dpram_sclk
   #(
     parameter ADDR_WIDTH = 32,
-    parameter DATA_WIDTH = 2,
+    parameter DATA_WIDTH = 32,
     parameter CLEAR_ON_INIT = 0,
     parameter ENABLE_BYPASS = 1
     )
