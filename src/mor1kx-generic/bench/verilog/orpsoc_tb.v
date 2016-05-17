@@ -62,7 +62,7 @@ module orpsoc_tb;
     $dumpvars(0,orpsoc_tb);
  end
 
-   orpsoc_top
+   orpsoc_multi_top
    dut
      (.wb_clk_i (syst_clk),
       .wb_rst_i (syst_rst),

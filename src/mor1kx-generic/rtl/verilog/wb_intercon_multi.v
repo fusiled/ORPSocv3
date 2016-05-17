@@ -6,6 +6,12 @@
 ///                                                               ////
 ///                                                               ////
 /// Matteo M. Fusi, fusiled@gmail.com                             ////
+/// Simone Disabato                                               ////
+///                                                               ////
+/// NOTES:                                                        ////
+/// i = instruction                                               ////
+/// d = data                                                      ////
+/// g = debug                                                     ////
 ///                                                               ////
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -44,39 +50,39 @@ module wb_intercon_multi
     )
    (input         clk_i,
     input         rst_i,
-    input  [(DATA_WIDTH)*NUM_CORES-1:0] or1k_d_adr_i,
-    input  [(DATA_WIDTH)*NUM_CORES-1:0] or1k_d_dat_i,
+    input  [DATA_WIDTH*NUM_CORES-1:0] or1k_d_adr_i,
+    input  [DATA_WIDTH*NUM_CORES-1:0] or1k_d_dat_i,
     input  [(3*NUM_CORES)-1:0] or1k_d_sel_i,
     input  [NUM_CORES-1:0]      or1k_d_we_i,
     input  [NUM_CORES-1:0]       or1k_d_cyc_i,
     input  [NUM_CORES-1:0]       or1k_d_stb_i,
-    input  [(3*NUM_CORES)-1:0] or1k_d_cti_i,
-    input  [(2*NUM_CORES)-1:0] or1k_d_bte_i,
-    output [(DATA_WIDTH)*NUM_CORES-1:0] or1k_d_dat_o,
+    input  [3*NUM_CORES-1:0] or1k_d_cti_i,
+    input  [2*NUM_CORES-1:0] or1k_d_bte_i,
+    output [DATA_WIDTH*NUM_CORES-1:0] or1k_d_dat_o,
     output [NUM_CORES-1:0]       or1k_d_ack_o,
     output [NUM_CORES-1:0]       or1k_d_err_o,
     output [NUM_CORES-1:0]       or1k_d_rty_o,
-    input  [(DATA_WIDTH)*NUM_CORES-1:0] or1k_i_adr_i,
-    input  [(DATA_WIDTH)*NUM_CORES-1:0] or1k_i_dat_i,
-    input  [(4*NUM_CORES)-1:0] or1k_i_sel_i,
+    input  [DATA_WIDTH*NUM_CORES-1:0] or1k_i_adr_i,
+    input  [DATA_WIDTH*NUM_CORES-1:0] or1k_i_dat_i,
+    input  [4*NUM_CORES-1:0] or1k_i_sel_i,
     input  [NUM_CORES-1:0]       or1k_i_we_i,
     input  [NUM_CORES-1:0]       or1k_i_cyc_i,
     input  [NUM_CORES-1:0]       or1k_i_stb_i,
-    input  [(3*NUM_CORES)-1:0] or1k_i_cti_i,
-    input  [(2*NUM_CORES)-1:0] or1k_i_bte_i,
-    output [(DATA_WIDTH)*NUM_CORES-1:0] or1k_i_dat_o,
+    input  [3*NUM_CORES-1:0] or1k_i_cti_i,
+    input  [2*NUM_CORES-1:0] or1k_i_bte_i,
+    output [DATA_WIDTH*NUM_CORES-1:0] or1k_i_dat_o,
     output [NUM_CORES-1:0]       or1k_i_ack_o,
     output [NUM_CORES-1:0]       or1k_i_err_o,
     output [NUM_CORES-1:0]       or1k_i_rty_o,
     input  [DATA_WIDTH-1:0] dbg_adr_i,
     input  [DATA_WIDTH-1:0] dbg_dat_i,
-    input   [3:0] dbg_sel_i,
-    input         dbg_we_i,
-    input         dbg_cyc_i,
-    input         dbg_stb_i,
-    input   [2:0] dbg_cti_i,
-    input   [1:0] dbg_bte_i,
-    output [DATA_WIDTH-1:0] dbg_dat_o,
+    input  [3:0] dbg_sel_i,
+    input        dbg_we_i,
+    input        dbg_cyc_i,
+    input        dbg_stb_i,
+    input  [2:0] dbg_cti_i,
+    input  [1:0] dbg_bte_i,
+    output [31:0] dbg_dat_o,
     output        dbg_ack_o,
     output        dbg_err_o,
     output        dbg_rty_o,
@@ -106,8 +112,9 @@ module wb_intercon_multi
     input         uart_rty_i);
 
 
-//Xatoi = X arbiter to intercon:  d=data, i= instruction
+//Xatoi = X arbiter to intercon:  d=data, i= instruction, g=debug
 //itoXa = intercon to X arbiter
+    //data wires
     wire  [31:0] datoi_or1k_d_adr,
     wire  [31:0] datoi_or1k_d_dat,
     wire   [3:0] datoi_or1k_d_sel,
@@ -120,6 +127,7 @@ module wb_intercon_multi
     wire         itoda_or1k_d_ack,
     wire         itoda_or1k_d_err,
     wire         itoda_or1k_d_rty,
+    //instruction wires
     wire  [31:0] iatoi_or1k_i_adr,
     wire  [31:0] iatoi_or1k_i_dat,
     wire   [3:0] iatoi_or1k_i_sel,
@@ -135,7 +143,7 @@ module wb_intercon_multi
 
 
 wb_arbiter
-    #(dw (DATA_WIDTH),
+    #(dw DATA_WIDTH,
     aw (32),
     num_masters (NUM_CORES)
     )
@@ -170,7 +178,7 @@ wb_arbiter
     );
 
 wb_arbiter
-    #(dw (DATA_WIDTH),
+    #(dw DATA_WIDTH,
     aw (32),
     num_masters (NUM_CORES)
     )
@@ -205,8 +213,6 @@ wb_arbiter
     );
 
 
-
-
 wb_intercon wb_intercon0
    (.wb_clk_i        (clk),
     .wb_rst_i        (rst),
@@ -234,18 +240,18 @@ wb_intercon wb_intercon0
     .wb_or1k_i_ack_o (itoia_or1k_i_ack),
     .wb_or1k_i_err_o (itoia_or1k_i_err),
     .wb_or1k_i_rty_o (itoia_or1k_i_rty),
-    .wb_dbg_adr_i    (dbg_adr),
-    .wb_dbg_dat_i    (dbg_dat),
-    .wb_dbg_sel_i    (dbg_sel),
-    .wb_dbg_we_i     (dbg_we),
-    .wb_dbg_cyc_i    (dbg_cyc),
-    .wb_dbg_stb_i    (dbg_stb),
-    .wb_dbg_cti_i    (dbg_cti),
-    .wb_dbg_bte_i    (dbg_bte),
-    .wb_dbg_dat_o    (dbg_dat),
-    .wb_dbg_ack_o    (dbg_ack),
-    .wb_dbg_err_o    (dbg_err),
-    .wb_dbg_rty_o    (dbg_rty),
+    .wb_dbg_adr_i    (gatoi_or1k_g_adr),
+    .wb_dbg_dat_i    (gatoi_or1k_g_dat),
+    .wb_dbg_sel_i    (gatoi_or1k_g_sel),
+    .wb_dbg_we_i     (gatoi_or1k_g_we),
+    .wb_dbg_cyc_i    (gatoi_or1k_g_cyc),
+    .wb_dbg_stb_i    (gatoi_or1k_g_stb),
+    .wb_dbg_cti_i    (gatoi_or1k_g_cti),
+    .wb_dbg_bte_i    (gatoi_or1k_g_bte),
+    .wb_dbg_dat_o    (itoga_or1k_g_dat),
+    .wb_dbg_ack_o    (itoga_or1k_g_ack),
+    .wb_dbg_err_o    (itoga_or1k_g_err),
+    .wb_dbg_rty_o    (itoga_or1k_g_rty),
     .wb_mem_adr_o    (mem_adr),
     .wb_mem_dat_o    (mem_dat),
     .wb_mem_sel_o    (mem_sel),
