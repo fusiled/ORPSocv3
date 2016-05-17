@@ -115,101 +115,101 @@ module wb_intercon_multi
 //Xatoi = X arbiter to intercon:  d=data, i= instruction, g=debug
 //itoXa = intercon to X arbiter
     //data wires
-    wire  [31:0] datoi_or1k_d_adr,
-    wire  [31:0] datoi_or1k_d_dat,
-    wire   [3:0] datoi_or1k_d_sel,
-    wire         datoi_or1k_d_we,
-    wire         datoi_or1k_d_cyc,
-    wire         datoi_or1k_d_stb,
-    wire   [2:0] datoi_or1k_d_cti,
-    wire   [1:0] datoi_or1k_d_bte,
-    wire  [31:0] itoda_or1k_d_dat,
-    wire         itoda_or1k_d_ack,
-    wire         itoda_or1k_d_err,
-    wire         itoda_or1k_d_rty,
+    wire  [31:0] datoi_or1k_d_adr;
+    wire  [31:0] datoi_or1k_d_dat;
+    wire   [3:0] datoi_or1k_d_sel;
+    wire         datoi_or1k_d_we;
+    wire         datoi_or1k_d_cyc;
+    wire         datoi_or1k_d_stb;
+    wire   [2:0] datoi_or1k_d_cti;
+    wire   [1:0] datoi_or1k_d_bte;
+    wire  [31:0] itoda_or1k_d_dat;
+    wire         itoda_or1k_d_ack;
+    wire         itoda_or1k_d_err;
+    wire         itoda_or1k_d_rty;
     //instruction wires
-    wire  [31:0] iatoi_or1k_i_adr,
-    wire  [31:0] iatoi_or1k_i_dat,
-    wire   [3:0] iatoi_or1k_i_sel,
-    wire         iatoi_or1k_i_we,
-    wire         iatoi_or1k_i_cyc,
-    wire         iatoi_or1k_i_stb,
-    wire   [2:0] iatoi_or1k_i_cti,
-    wire   [1:0] iatoi_or1k_i_bte,
-    wire [31:0]  itoia_or1k_i_dat,
-    wire         itoia_or1k_i_ack,
-    wire         itoia_or1k_i_err,
-    wire         itoia_or1k_i_rty,
+    wire  [31:0] iatoi_or1k_i_adr;
+    wire  [31:0] iatoi_or1k_i_dat;
+    wire   [3:0] iatoi_or1k_i_sel;
+    wire         iatoi_or1k_i_we;
+    wire         iatoi_or1k_i_cyc;
+    wire         iatoi_or1k_i_stb;
+    wire   [2:0] iatoi_or1k_i_cti;
+    wire   [1:0] iatoi_or1k_i_bte;
+    wire [31:0]  itoia_or1k_i_dat;
+    wire         itoia_or1k_i_ack;
+    wire         itoia_or1k_i_err;
+    wire         itoia_or1k_i_rty;
 
 
 wb_arbiter
-    #(dw DATA_WIDTH,
-    aw (32),
-    num_masters (NUM_CORES)
+    #(.dw (DATA_WIDTH),
+    .aw (32),
+    .num_masters (NUM_CORES)
     )
     data_arbiter
     (
-    wb_clk_i (clk_i),
-    wb_rst_i (rst_i),
-    wbm_adr_i (or1k_d_adr_i),
-    wbm_dat_i (or1k_d_dat_i),
-    wbm_sel_i (or1k_d_sel_i),
-    wbm_we_i  (or1k_d_we_i),
-    wbm_cyc_i (or1k_d_cyc_i),
-    wbm_stb_i (or1k_d_stb_i),
-    wbm_cti_i (or1k_d_cti_i),
-    wbm_bte_i (or1k_d_bte_i),
-    wbm_dat_o (or1k_d_dat_o),
-    wbm_ack_o (or1k_d_ack_o),
-    wbm_err_o (or1k_d_err_o),
-    wbm_rty_o (or1k_d_rty_o), 
-    wbs_adr_o (datoi_or1k_d_adr),
-    wbs_dat_o (datoi_or1k_d_dat),
-    wbs_sel_o (datoi_or1k_d_sel), 
-    wbs_we_o  (datoi_or1k_d_we),
-    wbs_cyc_o (datoi_or1k_d_cyc),
-    wbs_stb_o (datoi_or1k_d_stb),
-    wbs_cti_o (datoi_or1k_d_cti),
-    wbs_bte_o (datoi_or1k_d_bte),
-    wbs_dat_i (datoi_or1k_d_dat),
-    wbs_ack_i (itoda_or1k_d_ack),
-    wbs_err_i (itoda_or1k_d_err),
-    wbs_rty_i (itoda_or1k_d_rty) 
+    .wb_clk_i (clk_i),
+    .wb_rst_i (rst_i),
+    .wbm_adr_i (or1k_d_adr_i),
+    .wbm_dat_i (or1k_d_dat_i),
+    .wbm_sel_i (or1k_d_sel_i),
+    .wbm_we_i  (or1k_d_we_i),
+    .wbm_cyc_i (or1k_d_cyc_i),
+    .wbm_stb_i (or1k_d_stb_i),
+    .wbm_cti_i (or1k_d_cti_i),
+    .wbm_bte_i (or1k_d_bte_i),
+    .wbm_dat_o (or1k_d_dat_o),
+    .wbm_ack_o (or1k_d_ack_o),
+    .wbm_err_o (or1k_d_err_o),
+    .wbm_rty_o (or1k_d_rty_o), 
+    .wbs_adr_o (datoi_or1k_d_adr),
+    .wbs_dat_o (datoi_or1k_d_dat),
+    .wbs_sel_o (datoi_or1k_d_sel), 
+    .wbs_we_o  (datoi_or1k_d_we),
+    .wbs_cyc_o (datoi_or1k_d_cyc),
+    .wbs_stb_o (datoi_or1k_d_stb),
+    .wbs_cti_o (datoi_or1k_d_cti),
+    .wbs_bte_o (datoi_or1k_d_bte),
+    .wbs_dat_i (datoi_or1k_d_dat),
+    .wbs_ack_i (itoda_or1k_d_ack),
+    .wbs_err_i (itoda_or1k_d_err),
+    .wbs_rty_i (itoda_or1k_d_rty) 
     );
 
 wb_arbiter
-    #(dw DATA_WIDTH,
-    aw (32),
-    num_masters (NUM_CORES)
+    #(.dw (DATA_WIDTH),
+    .aw (32),
+    .num_masters (NUM_CORES)
     )
     instruction_arbiter
     (
-    wb_clk_i (clk_i),
-    wb_rst_i (rst_i),
-    wbm_adr_i (or1k_i_adr_i),
-    wbm_dat_i (or1k_i_dat_i),
-    wbm_sel_i (or1k_i_sel_i),
-    wbm_we_i  (or1k_i_we_i),
-    wbm_cyc_i (or1k_i_cyc_i),
-    wbm_stb_i (or1k_i_stb_i),
-    wbm_cti_i (or1k_i_cti_i),
-    wbm_bte_i (or1k_i_bte_i),
-    wbm_dat_o (or1k_i_dat_o),
-    wbm_ack_o (or1k_i_ack_o),
-    wbm_err_o (or1k_i_err_o),
-    wbm_rty_o (or1k_i_rty_o), 
-    wbs_adr_o (iatoi_or1k_i_adr),
-    wbs_dat_o (iatoi_or1k_i_dat),
-    wbs_sel_o (iatoi_or1k_i_sel), 
-    wbs_we_o  (iatoi_or1k_i_we),
-    wbs_cyc_o (iatoi_or1k_i_cyc),
-    wbs_stb_o (iatoi_or1k_i_stb),
-    wbs_cti_o (iatoi_or1k_i_cti),
-    wbs_bte_o (iatoi_or1k_i_bte),
-    wbs_dat_i (iatoi_or1k_i_dat),
-    wbs_ack_i (itoia_or1k_i_ack),
-    wbs_err_i (itoia_or1k_i_err),
-    wbs_rty_i (itoia_or1k_i_rty) 
+    .wb_clk_i (clk_i),
+    .wb_rst_i (rst_i),
+    .wbm_adr_i (or1k_i_adr_i),
+    .wbm_dat_i (or1k_i_dat_i),
+    .wbm_sel_i (or1k_i_sel_i),
+    .wbm_we_i  (or1k_i_we_i),
+    .wbm_cyc_i (or1k_i_cyc_i),
+    .wbm_stb_i (or1k_i_stb_i),
+    .wbm_cti_i (or1k_i_cti_i),
+    .wbm_bte_i (or1k_i_bte_i),
+    .wbm_dat_o (or1k_i_dat_o),
+    .wbm_ack_o (or1k_i_ack_o),
+    .wbm_err_o (or1k_i_err_o),
+    .wbm_rty_o (or1k_i_rty_o), 
+    .wbs_adr_o (iatoi_or1k_i_adr),
+    .wbs_dat_o (iatoi_or1k_i_dat),
+    .wbs_sel_o (iatoi_or1k_i_sel), 
+    .wbs_we_o  (iatoi_or1k_i_we),
+    .wbs_cyc_o (iatoi_or1k_i_cyc),
+    .wbs_stb_o (iatoi_or1k_i_stb),
+    .wbs_cti_o (iatoi_or1k_i_cti),
+    .wbs_bte_o (iatoi_or1k_i_bte),
+    .wbs_dat_i (iatoi_or1k_i_dat),
+    .wbs_ack_i (itoia_or1k_i_ack),
+    .wbs_err_i (itoia_or1k_i_err),
+    .wbs_rty_i (itoia_or1k_i_rty) 
     );
 
 
