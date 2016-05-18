@@ -315,14 +315,14 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 
 	.irq_i				(or1k_irq),
 
-	.du_addr_i			(or1k_dbg_adr_i),
+	/*.du_addr_i			(or1k_dbg_adr_i),
 	.du_stb_i			(or1k_dbg_stb_i),
 	.du_dat_i			(or1k_dbg_dat_i),
 	.du_we_i			(or1k_dbg_we_i),
 	.du_dat_o			(or1k_dbg_dat_o),
 	.du_ack_o			(or1k_dbg_ack_o),
 	.du_stall_i			(or1k_dbg_stall_i),
-	.du_stall_o			(or1k_dbg_bp_o),                     
+	.du_stall_o			(or1k_dbg_bp_o), */                    
     .multicore_numcores_i(NUM_CORES)				
 );
 
@@ -424,7 +424,7 @@ wb_intercon_multi
     .or1k_i_ack_o (wb_s2m_or1k_i_ack),
     .or1k_i_err_o (wb_s2m_or1k_i_err),
     .or1k_i_rty_o (wb_s2m_or1k_i_rty),
-    .dbg_adr_i    (atog_or1k_g_adr),
+/*    .dbg_adr_i    (atog_or1k_g_adr),
     .dbg_dat_i    (atog_or1k_g_dat),
     .dbg_sel_i    (atog_or1k_g_sel),
     .dbg_we_i     (atog_or1k_g_we),
@@ -435,7 +435,7 @@ wb_intercon_multi
     .dbg_dat_o    (gtoa_or1k_g_dat),
     .dbg_ack_o    (gtoa_or1k_g_ack),
     .dbg_err_o    (gtoa_or1k_g_err),
-    .dbg_rty_o    (gtoa_or1k_g_rty),
+    .dbg_rty_o    (gtoa_or1k_g_rty),*/
     .mem_adr_o    (wb_m2s_mem_adr),
     .mem_dat_o    (wb_m2s_mem_dat),
     .mem_sel_o    (wb_m2s_mem_sel),
