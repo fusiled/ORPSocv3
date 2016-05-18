@@ -11,8 +11,9 @@ module orpsoc_multi_top
 localparam wb_aw = 32;
 localparam wb_dw = 32;
 localparam NUM_CORES = 1;
-
 localparam MEM_SIZE_BITS = 25;
+
+localparam MULTICORE = NUM_CORES > 1 ? "YES" : "NONE";
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -253,6 +254,8 @@ wire		or1k_rst;
 assign or1k_clk = wb_clk;
 assign or1k_rst = wb_rst | or1k_dbg_rst;
 
+
+
 genvar i;
 
 generate
@@ -276,7 +279,8 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.IBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.DBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.OPTION_CPU0			("CAPPUCCINO"),
-	.OPTION_RESET_PC		(32'h00000100)
+	.OPTION_RESET_PC		(32'h00000100),
+	.FEATURE_MULTICORE		(MULTICORE)
 	) mor1kx0 (
 	.iwbm_adr_o			(wb_m2s_or1k_i_adr[32*(i+1)-1:(32*i)]),
 	.iwbm_stb_o			(wb_m2s_or1k_i_stb[i]),
@@ -318,7 +322,8 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.du_dat_o			(or1k_dbg_dat_o),
 	.du_ack_o			(or1k_dbg_ack_o),
 	.du_stall_i			(or1k_dbg_stall_i),
-	.du_stall_o			(or1k_dbg_bp_o)
+	.du_stall_o			(or1k_dbg_bp_o),                     
+    .multicore_numcores_i(NUM_CORES)				
 );
 
 
@@ -390,7 +395,9 @@ uart_top #(
 
 
 
-wb_intercon_multi wb_intercon_multi0
+wb_intercon_multi 
+	#(.NUM_CORES (NUM_CORES))
+	wb_intercon_multi0
    (.clk_i        (wb_clk),
     .rst_i        (wb_rst),
     .or1k_d_adr_i (wb_m2s_or1k_d_adr),
@@ -429,14 +436,14 @@ wb_intercon_multi wb_intercon_multi0
     .dbg_ack_o    (gtoa_or1k_g_ack),
     .dbg_err_o    (gtoa_or1k_g_err),
     .dbg_rty_o    (gtoa_or1k_g_rty),
-    .mem_adr_o    (m2s_mem_adr),
-    .mem_dat_o    (m2s_mem_dat),
-    .mem_sel_o    (m2s_mem_sel),
-    .mem_we_o     (m2s_mem_we),
-    .mem_cyc_o    (m2s_mem_cyc),
-    .mem_stb_o    (m2s_mem_stb),
-    .mem_cti_o    (m2s_mem_cti),
-    .mem_bte_o    (m2s_mem_bte),
+    .mem_adr_o    (wb_m2s_mem_adr),
+    .mem_dat_o    (wb_m2s_mem_dat),
+    .mem_sel_o    (wb_m2s_mem_sel),
+    .mem_we_o     (wb_m2s_mem_we),
+    .mem_cyc_o    (wb_m2s_mem_cyc),
+    .mem_stb_o    (wb_m2s_mem_stb),
+    .mem_cti_o    (wb_m2s_mem_cti),
+    .mem_bte_o    (wb_m2s_mem_bte),
     .mem_dat_i    (wb_s2m_mem_dat),
     .mem_ack_i    (wb_s2m_mem_ack),
     .mem_err_i    (wb_s2m_mem_err),

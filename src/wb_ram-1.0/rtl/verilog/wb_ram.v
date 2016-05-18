@@ -32,7 +32,9 @@ module wb_ram
 
    reg                     is_last_r;
    always @(posedge wb_clk_i)
+   begin
      is_last_r <= wb_is_last(wb_cti_i);
+   end
    wire                    new_cycle = (valid & !valid_r) | is_last_r;
 
    assign next_adr = wb_next_adr(adr_r, wb_cti_i, wb_bte_i, dw);

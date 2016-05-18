@@ -75,9 +75,8 @@ module wb_arbiter
 ///////////////////////////////////////////////////////////////////////////////
 // Parameters
 ///////////////////////////////////////////////////////////////////////////////
-
+   
    localparam master_sel_bits = num_masters > 1 ? `clog2(num_masters) : 1;
-
    wire [num_masters-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel;
    wire 		      active;
