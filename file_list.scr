@@ -93,4 +93,7 @@
 ../src/mor1kx-generic/rtl/verilog/wb_intercon_multi.v
 ../src/mor1kx-generic/rtl/verilog/orpsoc_multi_top.v
 
+../src/mor1kx-generic/rtl/verilog/wb_intercon_emb.v
+../src/mor1kx-generic/rtl/verilog/orpsoc_emb_top.v
+
 

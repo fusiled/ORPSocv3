@@ -62,7 +62,16 @@ module orpsoc_tb;
     $dumpvars(0,orpsoc_tb);
  end
 
-   orpsoc_multi_top
+   orpsoc_emb_top
+   #(.NUM_CORES (1))
+   dut
+     (.wb_clk_i (syst_clk),
+      .wb_rst_i (syst_rst)
+      );
+
+/*
+
+  orpsoc_multi_top
    #(.NUM_CORES (1))
    dut
      (.wb_clk_i (syst_clk),
@@ -71,5 +80,9 @@ module orpsoc_tb;
       .tck_pad_i (tck),
       .tdi_pad_i (tdi),
       .tdo_pad_o (tdo));
+
+
+
+*/
 
 endmodule
