@@ -477,16 +477,16 @@ module mor1kx_dcache
       invalidate_ack = 1'b0;
 
       if (snoop_hit) begin
-	 // This is the write access
-	 tag_we = 1'b1;
-	 tag_windex = snoop_windex;
-	 for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
-	    if (snoop_way_hit[w2]) begin
-	       tag_way_in[w2] = 0;
-	    end else begin
-	       tag_way_in[w2] = snoop_way_out[w2];
-	    end
-	 end
+	       // This is the write access
+	       tag_we = 1'b1;
+	       tag_windex = snoop_windex;
+	       for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
+	           if (snoop_way_hit[w2]) begin
+	               tag_way_in[w2] = 0;
+	           end else begin
+	               tag_way_in[w2] = snoop_way_out[w2];
+	           end
+	       end
       end else begin
 	 //
 	 // The tag mem is written during reads and writes to write
