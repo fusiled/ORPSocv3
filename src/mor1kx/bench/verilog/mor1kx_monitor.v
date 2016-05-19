@@ -15,26 +15,6 @@
  
 ***************************************************************************** */
 
-/* Configure these defines to point to the mor1kx instantiation */
-`ifndef MOR1KX_INST
- `define MOR1KX_INST dut.mor1kx0
-`endif
-
-/* The rest of these shouldn't need changing if the wrapper hooks have been 
- set up correctly in mor1kx_cpu. */
-`ifndef CPU_WRAPPER
- `define CPU_WRAPPER `MOR1KX_INST.mor1kx_cpu
-`endif
-`define CPU_INST `CPU_WRAPPER.`MOR1KX_CPU_PIPELINE.mor1kx_cpu
-`define EXECUTE_STAGE_INSN `CPU_WRAPPER.monitor_execute_insn
-`define EXECUTE_STAGE_ADV `CPU_WRAPPER.monitor_execute_advance
-`define CPU_clk `CPU_WRAPPER.monitor_clk
-`define CPU_FLAG `CPU_WRAPPER.monitor_flag
-`define CPU_SR `CPU_WRAPPER.monitor_spr_sr
-`define EXECUTE_PC `CPU_WRAPPER.monitor_execute_pc
-`define GPR_GET(x) `CPU_INST.get_gpr(x)
-`define GPR_SET(x, y) `CPU_INST.set_gpr(x, y)
-
 `include "mor1kx-defines.v"
 
 // Pull in an ORPSoC-specific file
@@ -51,7 +31,30 @@
 `define OR1K_SF_OP 25:21
 `define OR1K_XSYNC_OP_POS 25:21
 
-module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
+module mor1kx_monitor #(
+	parameter LOG_DIR= "../out",
+	parameter CPU_INDEX=0) ();
+
+	//this code has been moved from out of the module inside.
+	// In this way the define can be parametrized. Don't know if it's a ggod thing or not
+	/* Configure these defines to point to the mor1kx instantiation */
+ `define MOR1KX_INST dut.gen_cores[CPU_INDEX].mor1kx0
+
+/* The rest of these shouldn't need changing if the wrapper hooks have been 
+ set up correctly in mor1kx_cpu. */
+`ifndef CPU_WRAPPER
+ `define CPU_WRAPPER `MOR1KX_INST.mor1kx_cpu
+`endif
+`define CPU_INST `CPU_WRAPPER.`MOR1KX_CPU_PIPELINE.mor1kx_cpu
+`define EXECUTE_STAGE_INSN `CPU_WRAPPER.monitor_execute_insn
+`define EXECUTE_STAGE_ADV `CPU_WRAPPER.monitor_execute_advance
+`define CPU_clk `CPU_WRAPPER.monitor_clk
+`define CPU_FLAG `CPU_WRAPPER.monitor_flag
+`define CPU_SR `CPU_WRAPPER.monitor_spr_sr
+`define EXECUTE_PC `CPU_WRAPPER.monitor_execute_pc
+`define GPR_GET(x) `CPU_INST.get_gpr(x)
+`define GPR_SET(x, y) `CPU_INST.set_gpr(x, y)
+
 
    // General output file descriptor
    integer    fgeneral = 0;

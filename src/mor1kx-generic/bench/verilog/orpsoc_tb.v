@@ -2,6 +2,8 @@
 
 module orpsoc_tb;
 
+  localparam NUM_CORES=2;
+
    vlog_tb_utils vlog_tb_utils0();
 
     wire tms;
@@ -48,7 +50,17 @@ module orpsoc_tb;
    // mor1kx monitor
    //
    ////////////////////////////////////////////////////////////////////////
-   //mor1kx_monitor #(.LOG_DIR(".")) i_monitor();
+
+   //Generate multiple instances of the monitor: one foreach core
+   genvar iterator;
+   generate
+   for (iterator=0; iterator<NUM_CORES; iterator=iterator+1) begin: gen_monitor
+   mor1kx_monitor #(
+    .LOG_DIR("."),
+    .CPU_INDEX(iterator)
+    ) i_monitor();
+  end
+  endgenerate
 
    ////////////////////////////////////////////////////////////////////////
    //
@@ -64,7 +76,7 @@ module orpsoc_tb;
 
 
 
-  orpsoc_multi2_top
+  orpsoc_multi_top
    #(.NUM_CORES (2))
    dut
      (.wb_clk_i (syst_clk),
