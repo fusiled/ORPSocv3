@@ -1,5 +1,7 @@
+
 module orpsoc_multi_top
-#(parameter NUM_CORES=1)
+#(parameter NUM_CORES=1,
+  parameter MEM_PER_CORE=32'h1000)
 (
 		input wb_clk_i,
 		input wb_rst_i,
@@ -13,6 +15,8 @@ localparam wb_aw = 32;
 localparam wb_dw = 32;
 
 localparam MEM_SIZE_BITS = 25;
+
+localparam MULTICORE= NUM_CORES > 1 ? "YES" : "NONE";
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -222,8 +226,9 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.IBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.DBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.OPTION_CPU0			("CAPPUCCINO"),
-	.OPTION_RESET_PC		(32'h00000100)
-	//.FEATURE_MULTICORE		(MULTICORE)
+	//.OPTION_RESET_PC		(32'h00000100),
+	.OPTION_RESET_PC		(32'h00000100+i*MEM_PER_CORE),
+	.FEATURE_MULTICORE		(MULTICORE)
 	) mor1kx0 (
 	.iwbm_adr_o			(wb_m2s_or1k_i_adr[32*(i+1)-1:(32*i)]),
 	.iwbm_stb_o			(wb_m2s_or1k_i_stb[i]),
@@ -268,7 +273,6 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.du_stall_o			(or1k_dbg_bp_o),
 	.multicore_numcores_i(NUM_CORES)				
 );
-
 end
 endgenerate
 

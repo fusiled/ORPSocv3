@@ -43,7 +43,12 @@ module orpsoc_tb;
    reg syst_rst = 1;
 
    always #1 syst_clk <= ~syst_clk;
-   initial #100 syst_rst <= 0;
+   
+
+   initial 
+   begin
+    #100 syst_rst <= 0;
+   end
 
    ////////////////////////////////////////////////////////////////////////
    //
@@ -77,7 +82,8 @@ module orpsoc_tb;
 
 
   orpsoc_multi_top
-   #(.NUM_CORES (2))
+   #(.NUM_CORES (2),
+    .MEM_PER_CORE(0))
    dut
      (.wb_clk_i (syst_clk),
       .wb_rst_i (syst_rst),
