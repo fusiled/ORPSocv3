@@ -323,7 +323,7 @@ module mor1kx_cpu_cappuccino
    wire                 execute_op_rfe_o;       // From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
    wire                 execute_op_setflag_o;   // From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
    wire                 execute_op_shift_o;     // From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
-   wire [`OR1K_ALU_OPC_WIDTH-1:0] execute_opc_alu_o;// From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
+   wire [`OR1K_ALU_OPC_WIDTH-1:0] execute_opc_alu_o;// From morb1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
    wire [`OR1K_ALU_OPC_WIDTH-1:0] execute_opc_alu_secondary_o;// From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
    wire [`OR1K_OPCODE_WIDTH-1:0] execute_opc_insn_o;// From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v
    wire                 execute_predicted_flag_o;// From mor1kx_decode_execute_cappuccino of mor1kx_decode_execute_cappuccino.v

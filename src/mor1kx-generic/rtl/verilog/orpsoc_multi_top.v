@@ -88,6 +88,9 @@ wire        wb_s2m_uart_ack;
 wire        wb_s2m_uart_err;
 wire        wb_s2m_uart_rty;
 
+
+wire [32-1:0] snoop_adr_intercon;
+
 ////////////////////////////////////////////////////////////////////////
 //
 // GENERIC JTAG TAP
@@ -271,7 +274,11 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.du_ack_o			(or1k_dbg_ack_o),
 	.du_stall_i			(or1k_dbg_stall_i),
 	.du_stall_o			(or1k_dbg_bp_o),
-	.multicore_numcores_i(NUM_CORES)				
+	.multicore_numcores_i(NUM_CORES),
+
+
+	.snoop_adr_i		(snoop_adr_intercon),
+	.snoop_en_i         (1'b1)				
 );
 end
 endgenerate
