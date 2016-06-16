@@ -188,6 +188,8 @@ module mor1kx_dcache
 
    reg 				      write_pending;
 
+   reg   write_aborted;
+
    // Extract index to read from snooped address
    wire [OPTION_DCACHE_SET_WIDTH-1:0] snoop_index;
    assign snoop_index = snoop_adr_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];
@@ -433,8 +435,9 @@ module mor1kx_dcache
 	   end
 
 	   WRITE: begin
-	      if ((!dc_access_i | !cpu_req_i | !cpu_we_i) & !snoop_hit) begin
+	      if ((!dc_access_i | !cpu_req_i | !cpu_we_i | write_aborted) & !snoop_hit) begin
 		        write_pending <= 0;
+            write_aborted <= 0;
 		        state <= READ;
 	      end
 	   end
@@ -529,7 +532,10 @@ module mor1kx_dcache
 
 	   WRITE: begin
 	      way_wr_dat = cpu_dat_i;
-	      if (hit & cpu_req_i) begin
+        // To be sure that we do not enter in this condition twice in the same clock cycle when the write has been aborted
+        // we add the condition !write_aborted in bitwise and at the if. 
+	      if (hit & cpu_req_i & !write_aborted) begin
+
         		 /* Mux cache output with write data */
         		 if (!cpu_bsel_i[3])
         		   way_wr_dat[31:24] = cpu_dat_o[31:24];
@@ -540,19 +546,27 @@ module mor1kx_dcache
         		 if (!cpu_bsel_i[0])
         		   way_wr_dat[7:0] = cpu_dat_o[7:0];
 
-      	      way_we = way_hit;
+             // The content of the block in which we are writing is into the register cpu_dat_o.
+             // If war_wr_dat == cpu_dat_o we do not write nothing
+              if (way_wr_dat == cpu_dat_o) begin
+                  // We use some signal to notify this case?
+                  write_aborted = 1;
 
-       	      tag_lru_in = next_lru_history;
+              end else begin
 
-        		  tag_we = 1'b1;
+            	      way_we = way_hit;
 
-              // Now we should update the dirty bit of the block in which we will write
-              // Hyphotesis: since we have had a write hit, we will write on the way in which we have found the data.
-              // Will the tag be updated? Yes, becuase we have use the same code of the REFILL case.
-              for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
-                       if (way_hit[w2]) begin
-                             tag_way_in[w2][TAGMEM_WAY_DIRTY] = 1'b1;
-                       end
+             	      tag_lru_in = next_lru_history;
+
+              		  tag_we = 1'b1;
+
+                    // Now we should update the dirty bit of the block in which we will write
+                    // Hyphotesis: since we have had a write hit, we will write on the way in which we have found the data.
+                    for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
+                             if (way_hit[w2]) begin
+                                   tag_way_in[w2][TAGMEM_WAY_DIRTY] = 1'b1;
+                             end
+                    end
               end
 	      end
 	   end
@@ -604,7 +618,7 @@ module mor1kx_dcache
 	      // Lazy invalidation, invalidate everything that matches tag address
               tag_lru_in = 0;
               for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
-		                  tag_way_in[w2] = 0;
+		                  tag_way_in[w2][TAGMEM_WAY_VALID] = 0;
               end
 
 	      tag_we = 1'b1;

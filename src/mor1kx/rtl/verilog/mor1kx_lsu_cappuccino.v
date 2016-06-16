@@ -409,35 +409,39 @@ module mor1kx_lsu_cappuccino
 	   last_write <= 0;
 	   if (store_buffer_write | !store_buffer_empty) begin
 	      state <= WRITE;
-	   end else if (ctrl_op_lsu & dbus_access & !dc_refill & !dbus_ack &
-			!dbus_err & !except_dbus & !access_done &
-			!pipeline_flush_i) begin
-	      if (tlb_reload_req) begin
-		 dbus_adr <= tlb_reload_addr;
-		 dbus_req_o <= 1;
-		 state <= TLB_RELOAD;
-	      end else if (dmmu_enable_i) begin
-		 dbus_adr <= dmmu_phys_addr;
-		 if (!tlb_miss & !pagefault & !except_align) begin
-		    if (ctrl_op_lsu_load_i) begin
-		       dbus_req_o <= 1;
-		       dbus_bsel_o <= dbus_bsel;
-		       state <= READ;
-		    end
-		 end
-	      end else if (!except_align) begin
-		 dbus_adr <= ctrl_lsu_adr_i;
-		 if (ctrl_op_lsu_load_i) begin
-		    dbus_req_o <= 1;
-		    dbus_bsel_o <= dbus_bsel;
-		    state <= READ;
-		 end
-	      end
-	   end else if (dc_refill_req) begin
-	      dbus_req_o <= 1;
-	      dbus_adr <= dc_adr_match;
-	      state <= DC_REFILL;
-	   end
+	   end else
+     if (ctrl_op_lsu & dbus_access & !dc_refill & !dbus_ack &
+			             !dbus_err & !except_dbus & !access_done &
+			             !pipeline_flush_i) begin
+      if (tlb_reload_req) begin
+    		 dbus_adr <= tlb_reload_addr;
+    		 dbus_req_o <= 1;
+         state <= TLB_RELOAD;
+      end else
+      if (dmmu_enable_i) begin
+        dbus_adr <= dmmu_phys_addr;
+        if (!tlb_miss & !pagefault & !except_align) begin
+          if (ctrl_op_lsu_load_i) begin
+		        dbus_req_o <= 1;
+		        dbus_bsel_o <= dbus_bsel;
+		        state <= READ;
+          end
+        end
+      end else
+      if (!except_align) begin
+        dbus_adr <= ctrl_lsu_adr_i;
+        if (ctrl_op_lsu_load_i) begin
+          dbus_req_o <= 1;
+          dbus_bsel_o <= dbus_bsel;
+          state <= READ;
+        end
+      end
+    end else
+    if (dc_refill_req) begin
+      dbus_req_o <= 1;
+      dbus_adr <= dc_adr_match;
+      state <= DC_REFILL;
+    end
 	end
 
 	DC_REFILL: begin
@@ -747,7 +751,7 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
 	    .dc_access_i		(dc_access),		 // Templated
 	    .cpu_dat_i			(lsu_sdat),		 // Templated
 	    .cpu_adr_i			(dc_adr),		 // Templated
-	    .cpu_adr_match_i		(dc_adr_match),		 // Templated
+	    .cpu_adr_match_i		(dc_adr_match),		 // Templated DONE
 	    .cpu_req_i			(dc_req),		 // Templated
 	    .cpu_we_i			(dc_we),		 // Templated
 	    .cpu_bsel_i			(dc_bsel),		 // Templated
