@@ -618,7 +618,7 @@ module mor1kx_dcache
 	      // Lazy invalidation, invalidate everything that matches tag address
               tag_lru_in = 0;
               for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
-		                  tag_way_in[w2][TAGMEM_WAY_VALID] = 0;
+		                  tag_way_in[w2][TAGMEM_WAY_VALID] = 1'b0;
               end
 
 	      tag_we = 1'b1;

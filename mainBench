@@ -1,1 +1,0 @@
-src/mor1kx-generic/bench/verilog/orpsoc_tb.v

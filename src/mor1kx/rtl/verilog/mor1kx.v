@@ -22,9 +22,9 @@ module mor1kx
     parameter OPTION_CPU0		= "CAPPUCCINO",
 
     parameter FEATURE_DATACACHE		= "YES",
-    parameter OPTION_DCACHE_BLOCK_WIDTH	= 5,
-    parameter OPTION_DCACHE_SET_WIDTH	= 9,
-    parameter OPTION_DCACHE_WAYS	= 2,
+    parameter OPTION_DCACHE_BLOCK_WIDTH	= 1, //32
+    parameter OPTION_DCACHE_SET_WIDTH	= 1, //32
+    parameter OPTION_DCACHE_WAYS	= 1, //2
     parameter OPTION_DCACHE_LIMIT_WIDTH	= 32,
     parameter OPTION_DCACHE_SNOOP = "NONE",
     parameter FEATURE_DMMU		= "NONE",
