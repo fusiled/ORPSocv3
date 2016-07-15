@@ -71,11 +71,12 @@ module mor1kx_dcache
     );
 
    // States
-   localparam IDLE		= 5'b00001;
-   localparam READ		= 5'b00010;
-   localparam WRITE		= 5'b00100;
-   localparam REFILL		= 5'b01000;
-   localparam INVALIDATE	= 5'b10000;
+   localparam IDLE		= 6'b000001;
+   localparam READ		= 6'b000010;
+   localparam WRITE		= 6'b000100;
+   localparam REFILL		= 6'b001000;
+   localparam INVALIDATE	= 6'b010000;
+   localparam SNOOPHIT 		= 6'b100000
 
    // Address space in bytes for a way
    localparam WAY_WIDTH = OPTION_DCACHE_BLOCK_WIDTH + OPTION_DCACHE_SET_WIDTH;
@@ -115,10 +116,11 @@ module mor1kx_dcache
    localparam TAG_LRU_LSB = TAG_LRU_MSB - TAG_LRU_WIDTH + 1;
 
    // FSM state signals
-   reg [4:0] 			      state;
+   reg [5:0] 			      state;
    wire				      read;  
    wire				      write;
    wire				      refill;
+   wire 				snoop_hit_state;
 
    reg [WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH] invalidate_adr;
    wire [31:0] 			      next_refill_adr;
@@ -301,6 +303,7 @@ module mor1kx_dcache
    assign refill = (state == REFILL);
    assign read = (state == READ);
    assign write = (state == WRITE);
+   assign snoop_hit_state = (state == SNOOPHIT);
 
    assign refill_o = refill;
 
