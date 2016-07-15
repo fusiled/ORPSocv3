@@ -58,7 +58,8 @@ module mor1kx_dcache
     // Whether the snoop hit. If so, there will be no tag memory write
     // this cycle. The LSU may need to stall the pipeline.
     output 			      snoop_hit_o,
-
+    output [31_0]		  snoop_dat_o,
+    output 				  snoop_valid_dat_o,
 
     // SPR interface
     input [15:0] 		      spr_bus_addr_i,
@@ -219,8 +220,13 @@ module mor1kx_dcache
    wire [OPTION_DCACHE_WAYS-1:0]      snoop_way_hit;
    // Whether any way hits
    wire 			      snoop_hit;
+   // Wheter the snooped data is retrieved.
+   reg [31:0] 			  snoop_dat:
+   wire 				  snoop_valid_dat;
 
    assign snoop_hit_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_hit : 0;
+   assign snoop_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_dat : 32'bx;
+   assign snoop_valid_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_valid_dat : 0;
 
    genvar 			      i;
 
@@ -241,32 +247,32 @@ module mor1kx_dcache
       end
 
       for (i = 0; i < OPTION_DCACHE_WAYS; i=i+1) begin : ways
-      	 assign way_raddr[i] = cpu_adr_i[WAY_WIDTH-1:2];
-      	 assign way_waddr[i] = write ? cpu_adr_match_i[WAY_WIDTH-1:2] :
-      			       wradr_i[WAY_WIDTH-1:2];
-      	 assign way_din[i] = way_wr_dat;
+	  	assign way_raddr[i] = cpu_adr_i[WAY_WIDTH-1:2];
+	  	assign way_waddr[i] = write ? cpu_adr_match_i[WAY_WIDTH-1:2] :
+	  			       wradr_i[WAY_WIDTH-1:2];
+	  	assign way_din[i] = way_wr_dat;
 
-      	 // compare stored tag with incoming tag and check valid bit
-         assign check_way_tag[i] = tag_way_out[i][TAG_WIDTH-1:0];
-         assign check_way_match[i] = (check_way_tag[i] == tag_tag);
-         assign check_way_valid[i] = tag_way_out[i][TAGMEM_WAY_VALID];
+	  	// compare stored tag with incoming tag and check valid bit
+	    assign check_way_tag[i] = tag_way_out[i][TAG_WIDTH-1:0];
+	    assign check_way_match[i] = (check_way_tag[i] == tag_tag);
+	    assign check_way_valid[i] = tag_way_out[i][TAGMEM_WAY_VALID];
 
-         assign way_hit[i] = check_way_valid[i] & check_way_match[i];
+	    assign way_hit[i] = check_way_valid[i] & check_way_match[i];
 
-         // Multiplex the way entries in the tag memory
-         assign tag_din[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH] = tag_way_in[i];
-         assign tag_way_out[i] = tag_dout[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH];
+	    // Multiplex the way entries in the tag memory
+	    assign tag_din[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH] = tag_way_in[i];
+	    assign tag_way_out[i] = tag_dout[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH];
 
-	       if (OPTION_DCACHE_SNOOP != "NONE") begin
+	    if (OPTION_DCACHE_SNOOP != "NONE") begin
 	          // The same for the snoop tag memory
-            assign snoop_way_out[i] = snoop_dout[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH];
+           assign snoop_way_out[i] = snoop_dout[(i+1)*TAGMEM_WAY_WIDTH-1:i*TAGMEM_WAY_WIDTH];
 
-	           assign snoop_check_way_tag[i] = snoop_way_out[i][TAG_WIDTH-1:0];
-        	   assign snoop_check_way_match[i] = (snoop_check_way_tag[i] == snoop_tag);
-        	   assign snoop_check_way_valid[i] = snoop_way_out[i][TAGMEM_WAY_VALID];
+           assign snoop_check_way_tag[i] = snoop_way_out[i][TAG_WIDTH-1:0];
+    	   assign snoop_check_way_match[i] = (snoop_check_way_tag[i] == snoop_tag);
+    	   assign snoop_check_way_valid[i] = snoop_way_out[i][TAGMEM_WAY_VALID];
 
-        	   assign snoop_way_hit[i] = snoop_check_way_valid[i] & snoop_check_way_match[i];
-	       end
+    	   assign snoop_way_hit[i] = snoop_check_way_valid[i] & snoop_check_way_match[i];
+	    end
       end
    endgenerate
 
@@ -380,7 +386,15 @@ module mor1kx_dcache
 
 	 case (state)
 	   IDLE: begin
-	      if (invalidate) begin
+	   	  if (snoop_hit) begin
+	   	  	// If there was a snoop_hit
+	   	  	//
+	   	  	// Go to the dedicated state where we extract the data from the memory.
+	   	  	//snoop_valid_dat <= 0;
+
+	   	  	state <= SNOOPHIT;
+
+	      end else if (invalidate) begin
         		 // If there is an invalidation request
         		 //
         		 // Store address in invalidate_adr that is muxed to the tag
@@ -397,65 +411,81 @@ module mor1kx_dcache
 	   end
 
 	   READ: begin
-	    if (dc_access_i | cpu_we_i & dc_enable_i) begin
-		    if (!hit & cpu_req_i & !write_pending & refill_allowed) begin
-		      refill_valid <= 0;
-		      refill_valid_r <= 0;
+		    if (dc_access_i | cpu_we_i & dc_enable_i) begin
+			    if (!hit & cpu_req_i & !write_pending & refill_allowed) begin
+			      refill_valid <= 0;
+			      refill_valid_r <= 0;
 
-		      // Store the LRU information for correct replacement
-                    // on refill. Always one when only one way.
-          tag_save_lru <= (OPTION_DCACHE_WAYS==1) | lru;
+			      // Store the LRU information for correct replacement
+	                    // on refill. Always one when only one way.
+	          	  tag_save_lru <= (OPTION_DCACHE_WAYS==1) | lru;
 
-		      for (w1 = 0; w1 < OPTION_DCACHE_WAYS; w1 = w1 + 1) begin
-		        tag_way_save[w1] <= tag_way_out[w1];
-		      end
+			      for (w1 = 0; w1 < OPTION_DCACHE_WAYS; w1 = w1 + 1) begin
+			        tag_way_save[w1] <= tag_way_out[w1];
+			      end
 
-		      state <= REFILL;
-		    end else if (cpu_we_i | write_pending) begin
-		      state <= WRITE;
-		    end else if (invalidate) begin
-		      state <= IDLE;
+			      state <= REFILL;
+			    end else if (cpu_we_i | write_pending) begin
+			      state <= WRITE;
+			    end else if (invalidate) begin
+			      state <= IDLE;
+			    end else if (snoop_hit) begin
+			      state <= IDLE;
+			    end
+	     	end else if (!dc_enable_i | invalidate | snoop_hit) begin
+			    state <= IDLE;
 		    end
-      end else if (!dc_enable_i | invalidate) begin
-		    state <= IDLE;
 	    end
-    end
 
 	   REFILL: begin
-	      if (we_i) begin
+		    if (we_i) begin
         		 refill_valid[wradr_i[OPTION_DCACHE_BLOCK_WIDTH-1:2]] <= 1;
 
         		 if (refill_done)
         		   state <= IDLE;
-        end
-        	      // Abort refill on snoop-hit
-        	      // TODO: only abort on snoop-hits to refill address
-        if (snoop_hit) begin
-        		 refill_valid <= 0;
-        		 refill_valid_r <= 0;
-        		 state <= IDLE;
-        end
+	        end
+	        	      // Abort refill on snoop-hit
+	        	      // TODO: only abort on snoop-hits to refill address
+	        if (snoop_hit) begin
+	        		 refill_valid <= 0;
+	        		 refill_valid_r <= 0;
+	        		 state <= IDLE;
+	        end
 	   end
 
 	   WRITE: begin
 	      if ((!dc_access_i | !cpu_req_i | !cpu_we_i | write_aborted) & !snoop_hit) begin
 		        write_pending <= 0;
-            write_aborted <= 0;
+            	write_aborted <= 0;
 		        state <= READ;
+	      end else if (snoop_hit & (!write_pending | write_aborted)) begin
+	      		// When we have a snoop_hit during a cache write we wait for the end of the write (unless it has been aborted), then we pass directly to the idle state
+	      		state <= IDLE;
 	      end
 	   end
 
 	   INVALIDATE: begin
 	      if (invalidate) begin
-		 // Store address in invalidate_adr that is muxed to the tag
-		 // memory write address
-		 invalidate_adr <= spr_bus_dat_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];
+			 // Store address in invalidate_adr that is muxed to the tag
+			 // memory write address
+			 invalidate_adr <= spr_bus_dat_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];
 
-		 state <= INVALIDATE;
+			 state <= INVALIDATE;
 	      end else begin
-		 state <= IDLE;
+		 	state <= IDLE;
 	      end
 	   end
+
+	   SNOOPHIT: begin
+	   		if (snoop_valid_dat) begin
+	   			state <= IDLE;
+	   			// The snoop has been handled, thus I reset the special registers
+	   			snoop_valid_dat <= 0;
+	    		snoop_dat <= 32'bx;
+	   		end
+
+	   end
+
 
 	   default:
 	     state <= IDLE;
@@ -625,6 +655,10 @@ module mor1kx_dcache
               end
 
 	      tag_we = 1'b1;
+	   end
+
+	   SNOOPHIT: begin
+
 	   end
 
 	   default: begin
