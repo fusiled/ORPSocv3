@@ -58,6 +58,8 @@ module mor1kx_dcache
     // Whether the snoop hit. If so, there will be no tag memory write
     // this cycle. The LSU may need to stall the pipeline.
     output 			      snoop_hit_o,
+    // To pass the data to the LSU for cache coherence protocol
+    output [31:0]     snoop_dat_o,
 
 
     // SPR interface
@@ -194,6 +196,8 @@ module mor1kx_dcache
    wire [OPTION_DCACHE_SET_WIDTH-1:0] snoop_index;
    assign snoop_index = snoop_adr_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];
 
+   assign snoop_dat_o = snoop_dout;
+
    // Register that is high one cycle after the actual snoop event to
    // drive the comparison
    reg 				      snoop_check;
@@ -217,6 +221,8 @@ module mor1kx_dcache
    wire [OPTION_DCACHE_WAYS-1:0]      snoop_way_hit;
    // Whether any way hits
    wire 			      snoop_hit;
+
+   wire [31:0]snoop_dat;
 
    assign snoop_hit_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_hit : 0;
 
@@ -488,12 +494,14 @@ module mor1kx_dcache
 	       tag_windex = snoop_windex;
 	       for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
 	           if (snoop_way_hit[w2]) begin
+                 snoop_dout = way_dout[w2]; //XXX
 	               tag_way_in[w2] = 0;
 	           end else begin
 	               tag_way_in[w2] = snoop_way_out[w2];
 	           end
 	       end
       end else begin
+    snoop_dout = 0;
 	 //
 	 // The tag mem is written during reads and writes to write
 	 // the lru info and  during refill and invalidate.

@@ -141,6 +141,7 @@ module mor1kx_lsu_cappuccino
    wire [OPTION_OPERAND_WIDTH-1:0]   lsu_sdat;
    wire				     lsu_ack;
 
+   // DCACHE
    wire 			     dc_err;
    wire 			     dc_ack;
    wire [31:0] 			     dc_ldat;
@@ -159,8 +160,10 @@ module mor1kx_lsu_cappuccino
 
    reg 				     dc_enable_r;
    wire 			     dc_enabled;
+   wire [31:0]     dc_snoop_dat;
 
    wire 			     ctrl_op_lsu;
+
 
    // DMMU
    wire 			     tlb_miss;
@@ -720,6 +723,7 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
 	    .wrdat_i			(dbus_dat_i),
 	    .we_i			(dbus_ack_i),
             .snoop_valid_i              (snoop_valid),
+             .snoop_dat_o    (dc_snoop_dat)
     );*/
 
    mor1kx_dcache
@@ -764,7 +768,8 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
 	    .spr_bus_addr_i		(spr_bus_addr_i[15:0]),
 	    .spr_bus_we_i		(spr_bus_we_i),
 	    .spr_bus_stb_i		(spr_bus_stb_i),
-	    .spr_bus_dat_i		(spr_bus_dat_i[OPTION_OPERAND_WIDTH-1:0]));
+	    .spr_bus_dat_i		(spr_bus_dat_i[OPTION_OPERAND_WIDTH-1:0])
+      .snoop_dat_o    (dc_snoop_dat));
 end else begin
    assign dc_access = 0;
    assign dc_refill = 0;
