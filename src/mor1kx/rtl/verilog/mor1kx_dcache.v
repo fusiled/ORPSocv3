@@ -58,7 +58,7 @@ module mor1kx_dcache
     // Whether the snoop hit. If so, there will be no tag memory write
     // this cycle. The LSU may need to stall the pipeline.
     output 			      snoop_hit_o,
-    output [31_0]		  snoop_dat_o,
+    output [31:0]		  snoop_dat_o,
     output 				  snoop_valid_dat_o,
 
     // SPR interface
@@ -77,7 +77,7 @@ module mor1kx_dcache
    localparam WRITE		= 6'b000100;
    localparam REFILL		= 6'b001000;
    localparam INVALIDATE	= 6'b010000;
-   localparam SNOOPHIT 		= 6'b100000
+   localparam SNOOPHIT 		= 6'b100000;
 
    // Address space in bytes for a way
    localparam WAY_WIDTH = OPTION_DCACHE_BLOCK_WIDTH + OPTION_DCACHE_SET_WIDTH;
@@ -221,8 +221,8 @@ module mor1kx_dcache
    // Whether any way hits
    wire 			      snoop_hit;
    // Wheter the snooped data is retrieved.
-   reg [31:0] 			  snoop_dat:
-   wire 				  snoop_valid_dat;
+   reg [31:0] 			  snoop_dat;
+   reg 				  snoop_valid_dat;
 
    assign snoop_hit_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_hit : 0;
    assign snoop_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_dat : 32'bx;
