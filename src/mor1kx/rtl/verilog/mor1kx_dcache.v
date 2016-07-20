@@ -459,7 +459,8 @@ module mor1kx_dcache
             	write_aborted <= 0;
 		        state <= READ;
 	      end else if (snoop_hit & (!write_pending | write_aborted)) begin
-	      		// When we have a snoop_hit during a cache write we wait for the end of the write (unless it has been aborted), then we pass directly to the idle state
+	      		// When we have a snoop_hit during a cache write we wait for the end of the write
+            // (unless it has been aborted), then we pass directly to the idle state
 	      		state <= IDLE;
 	      end
 	   end
@@ -521,7 +522,7 @@ module mor1kx_dcache
 	       tag_windex = snoop_windex;
 	       for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
 	           if (snoop_way_hit[w2]) begin
-	               tag_way_in[w2] = 0;
+	               tag_way_in[w2][TAGMEM_WAY_VALID] = 1'b0;
 	           end else begin
 	               tag_way_in[w2] = snoop_way_out[w2];
 	           end
