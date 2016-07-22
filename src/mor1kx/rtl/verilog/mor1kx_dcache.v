@@ -159,10 +159,13 @@ module mor1kx_dcache
 
    // Access to the way memories
    wire [WAY_WIDTH-3:0] 	      way_raddr[OPTION_DCACHE_WAYS-1:0];
+   //wire [WAY_WIDTH-3:0] 	      way_snooped_raddr[OPTION_DCACHE_WAYS-1:0];
    wire [WAY_WIDTH-3:0] 	      way_waddr[OPTION_DCACHE_WAYS-1:0];
    wire [OPTION_OPERAND_WIDTH-1:0]    way_din[OPTION_DCACHE_WAYS-1:0];
    wire [OPTION_OPERAND_WIDTH-1:0]    way_dout[OPTION_DCACHE_WAYS-1:0];
    reg  [OPTION_DCACHE_WAYS-1:0]       way_we;
+   // A special wire that contains the address to be passed to the data ram
+   wire [WAY_WIDTH-3:0]			way_raddr_muxed[OPTION_DCACHE_WAYS-1:0];
 
    // Does any way hit?
    wire 			      hit;
@@ -248,6 +251,8 @@ module mor1kx_dcache
 
       for (i = 0; i < OPTION_DCACHE_WAYS; i=i+1) begin : ways
 	  	assign way_raddr[i] = cpu_adr_i[WAY_WIDTH-1:2];
+	  	// Update the muxed wires
+	  	assign way_raddr_muxed[i] = (snoop_hit & snoop_hit_state) ? snoop_adr_i[WAY_WIDTH-1:2] : way_raddr[i];
 	  	assign way_waddr[i] = write ? cpu_adr_match_i[WAY_WIDTH-1:2] :
 	  			       wradr_i[WAY_WIDTH-1:2];
 	  	assign way_din[i] = way_wr_dat;
@@ -284,6 +289,8 @@ module mor1kx_dcache
    integer w0;
    always @(*) begin
       cpu_dat_o = {OPTION_OPERAND_WIDTH{1'bx}};
+      // Set the default value for the snoop dat output to undefined.
+      //snoop_dat = {OPTION_OPERAND_WIDTH{1'bx}};	<-- there is also this operation in the synchronous FSM.
 
       // Put correct way on the data port
       for (w0 = 0; w0 < OPTION_DCACHE_WAYS; w0 = w0 + 1) begin
@@ -292,6 +299,15 @@ module mor1kx_dcache
          end
       end
    end
+   		// Only when I am in the SNOOPHIT state I change the value of the snoop_dat_o
+   	if (snoop_hit & snoop_hit_state) begin
+   		for (w0 = 0; w0 < OPTION_DCACHE_WAYS; w0 = w0 + 1) begin
+   			if (snoop_way_hit[w0]) begin
+   				// In this situation the data_ram has on its output wire the snooped data.
+   				snoop_dat = way_dout[w0];
+   			end
+   		end
+   	end
 
    assign next_refill_adr = (OPTION_DCACHE_BLOCK_WIDTH == 5) ?
 			    {wradr_i[31:5], wradr_i[4:0] + 5'd4} : // 32 byte
@@ -550,17 +566,17 @@ module mor1kx_dcache
 
 	   READ: begin
 	      if (hit) begin
-		 //
-		 // We got a hit. The LRU module gets the access
-		 // information. Depending on this we update the LRU
-		 // history in the tag.
-		 //
-		 access = way_hit;
+			 //
+			 // We got a hit. The LRU module gets the access
+			 // information. Depending on this we update the LRU
+			 // history in the tag.
+			 //
+			 access = way_hit;
 
-		 // This is the updated LRU history after hit
-		 tag_lru_in = next_lru_history;
+			 // This is the updated LRU history after hit
+			 tag_lru_in = next_lru_history;
 
-		 tag_we = 1'b1;
+			 tag_we = 1'b1;
 	      end
 	   end
 
@@ -659,6 +675,25 @@ module mor1kx_dcache
 	   end
 
 	   SNOOPHIT: begin
+	   		// To be sure the write enable wire is zeroed
+	   		way_we = {(OPTION_DCACHE_WAYS){1'b0}};
+
+	   		// The address that need to be passed to the data_ram to obtain the snooped data
+	   		// is automatically updated with the assign on the way_raddr_muxed wire.
+	   		// Hence, we need just to wait for a change of the output of the data ram to 
+	   		// consider the snooped operation finished. 
+	   		// We suppose that we just need to wait for the next posedge clock cycle since the
+	   		// reading of a data requires exactly one cycles and there is no way to include
+	   		// an array into the sensitivity list.
+	   		// In addition this choice is "a little bit" more secure than the one described
+	   		// above since it can happens that the snooped data and the previous one are exactly
+	   		// the same. 
+	   		always @(posedge clk) begin : end_of_snooped_data_retrieving_
+	   			// Set to 1 the snoop_valid_dat signal to notify both the cache and the 
+	   			// "external" that the snooped data has been retrieved.
+	   			snoop_valid_dat <= 1;
+	   			// The data will be set to the correct value in the dedicated code above.
+	   		end
 
 	   end
 
@@ -682,7 +717,7 @@ module mor1kx_dcache
 		.dout			(way_dout[i]),
 		// Inputs
 		.clk			(clk),
-		.raddr			(way_raddr[i][WAY_WIDTH-3:0]),
+		.raddr			(way_raddr_muxed[i][WAY_WIDTH-3:0]),
 		.re			(1'b1),
 		.waddr			(way_waddr[i][WAY_WIDTH-3:0]),
 		.we			(way_we[i]),
