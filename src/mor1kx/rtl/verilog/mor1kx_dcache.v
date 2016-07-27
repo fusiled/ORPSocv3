@@ -60,6 +60,9 @@ module mor1kx_dcache
     output 			      snoop_hit_o,
     output [31:0]		  snoop_dat_o,
     output 				  snoop_valid_dat_o,
+    //tells to dcache that outside has received the snooped datum. This should signal a state migration
+    //from SNOOPHIT to IDLE. master must deassert this signal.
+    input           snoop_ack_i,
 
     // SPR interface
     input [15:0] 		      spr_bus_addr_i,
@@ -229,7 +232,7 @@ module mor1kx_dcache
 
    assign snoop_hit_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_hit : 0;
    assign snoop_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_dat : 32'bx;
-   assign snoop_valid_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_valid_dat : 0;
+   assign snoop_valid_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_valid_dat : 1'bx;
 
    genvar 			      i;
 
@@ -287,6 +290,7 @@ module mor1kx_dcache
 		      |snoop_way_hit & snoop_check;
 
    integer w0;
+
    always @(*) begin
       cpu_dat_o = {OPTION_OPERAND_WIDTH{1'bx}};
       // Set the default value for the snoop dat output to undefined.
@@ -410,8 +414,6 @@ module mor1kx_dcache
 	   	  	// If there was a snoop_hit
 	   	  	//
 	   	  	// Go to the dedicated state where we extract the data from the memory.
-	   	  	//snoop_valid_dat <= 0;
-
 	   	  	state <= SNOOPHIT;
 
 	      end else if (invalidate) begin
@@ -498,13 +500,9 @@ module mor1kx_dcache
 	   end
 
 	   SNOOPHIT: begin
-	   		if (snoop_valid_dat) begin
+	   		if (snoop_ack_i) begin
 	   			state <= IDLE;
-	   			// The snoop has been handled, thus I reset the special registers
-	   			snoop_valid_dat <= 0;
-	    		snoop_dat <= 32'bx;
 	   		end
-
 	   end
 
 
@@ -679,10 +677,18 @@ module mor1kx_dcache
 	   end
 
 	   SNOOPHIT: begin
-	   		// To be sure the write enable wire is zeroed
-	   		way_we = {(OPTION_DCACHE_WAYS){1'b0}};
-
-	   end
+      if (snoop_ack_i) begin
+          // The snoop has been handled, thus I reset registers
+          snoop_valid_dat <= 0;
+          snoop_dat <= 32'bx;
+        end
+        else
+        begin
+          snoop_valid_dat = 1;
+	   		  // To be sure the write enable wire is zeroed
+	   		  way_we = {(OPTION_DCACHE_WAYS){1'b0}};
+	      end
+     end
 
 	   default: begin
 	   end
