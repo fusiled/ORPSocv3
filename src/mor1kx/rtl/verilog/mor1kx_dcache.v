@@ -411,11 +411,12 @@ module mor1kx_dcache
 	 case (state)
     //TODO need to elucubrate more on snoop_valid_dat: how can i notify outside that i don't have a snoop hit?
 	   IDLE: begin
-      snoop_valid_dat <= 1'bx
+      snoop_valid_dat <= 1'bx;
 	   	  if (snoop_hit) begin
 	   	  	// If there was a snoop_hit
 	   	  	// Go to the dedicated state where we extract the data from the memory.
 	   	  	state <= SNOOPHIT;
+        end
         else
         begin
           snoop_valid_dat <= 0;
