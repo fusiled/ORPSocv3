@@ -409,14 +409,19 @@ module mor1kx_dcache
 	 end
 
 	 case (state)
+    //TODO need to elucubrate more on snoop_valid_dat: how can i notify outside that i don't have a snoop hit?
 	   IDLE: begin
+      snoop_valid_dat <= 1'bx
 	   	  if (snoop_hit) begin
 	   	  	// If there was a snoop_hit
-	   	  	//
 	   	  	// Go to the dedicated state where we extract the data from the memory.
 	   	  	state <= SNOOPHIT;
+        else
+        begin
+          snoop_valid_dat <= 0;
+        end
 
-	      end else if (invalidate) begin
+	      if (invalidate) begin
         		 // If there is an invalidation request
         		 //
         		 // Store address in invalidate_adr that is muxed to the tag
@@ -677,9 +682,19 @@ module mor1kx_dcache
 	   end
 
 	   SNOOPHIT: begin
+         // The address that need to be passed to the data_ram to obtain the snooped data
+   // is automatically updated with the assign on the way_raddr_muxed wire.
+   // Hence, we need just to wait for a change of the output of the data ram to 
+   // consider the snooped operation finished. 
+   // We suppose that we just need to wait for the next posedge clock cycle since the
+   // reading of a data requires exactly one cycles and there is no way to include
+   // an array into the sensitivity list.
+   // In addition this choice is "a little bit" more secure than the one described
+   // above since it can happens that the snooped data and the previous one are exactly
+   // the same. 
       if (snoop_ack_i) begin
           // The snoop has been handled, thus I reset registers
-          snoop_valid_dat <= 0;
+          snoop_valid_dat <= 1'bx;
           snoop_dat <= 32'bx;
         end
         else
@@ -695,27 +710,6 @@ module mor1kx_dcache
 	 endcase
       end
    end
-
-   // The address that need to be passed to the data_ram to obtain the snooped data
-   // is automatically updated with the assign on the way_raddr_muxed wire.
-   // Hence, we need just to wait for a change of the output of the data ram to 
-   // consider the snooped operation finished. 
-   // We suppose that we just need to wait for the next posedge clock cycle since the
-   // reading of a data requires exactly one cycles and there is no way to include
-   // an array into the sensitivity list.
-   // In addition this choice is "a little bit" more secure than the one described
-   // above since it can happens that the snooped data and the previous one are exactly
-   // the same. 
-   //XXX moved bu Fusi here. ask to Simo if it's possible to migrate this part in the state machine
-   always @(posedge clk) begin //: end_of_snooped_data_retrieving_
-    // Set to 1 the snoop_valid_dat signal to notify both the cache and the 
-    // "external" that the snooped data has been retrieved.
-      if (state == SNOOPHIT) begin
-       snoop_valid_dat <= 1;
-     end
-    // The data will be set to the correct value in the dedicated code above.
-   end
-
 
    generate
       for (i = 0; i < OPTION_DCACHE_WAYS; i=i+1) begin : way_memories
