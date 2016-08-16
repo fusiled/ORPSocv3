@@ -1,0 +1,15 @@
+@startuml
+Title Read memory
+
+core -> snoop_proxy: send adr on dbus_adr (wb_we = 0)
+snoop_proxy -> snoop_proxy: poll_active=1
+snoop_proxy -> other_cores: forward adr to cores
+
+other_cores -> snoop_proxy: poll_response (+ info)
+opt poll is not successful
+    snoop_proxy -> Memory: send request to memory
+    snoop_proxy <- Memory: memory response
+end
+snoop_proxy -> core: send missing info
+
+@enduml

@@ -1,0 +1,45 @@
+
+
+Per prima cosa inseriamo un proxy (chiamato snoop_proxy) tra la memoria e l'interconnessione (bisogna pensarlo in
+maniera saggia, ma non dovrebbe essere un problema).
+
+COSA DOVREBBE FARE SNOOP_PROXY
+
+--->Lettura in memoria
+    Per la lettura l'idea è quella di usare un metodo di polling. Quando core1 legge in memoria (cioè è in fase di refill
+    della sua cache) il proxy esegue una specie di sondaggio intervistando gli altri cores: asserisce il segnale poll_active
+    e trasmette l'indirizzo del dato richiesto. I core dovranno rispondergli controllando la cache:
+        - se hanno il dato il segnale snoop_response relativo ad un core sarà alto e trasmetterà anche su snoop_dat il
+            dato richiesto
+        - altrimento snoop_response sarà basso
+    Ora controlliamo l'esito del sondaggio:
+        - se almeno uno dei core interrogati ha risposto positivamente inviato il dato appena ricevuto al core che ha
+            richiesto il dato
+        - altrimenti accediamo alla memoria, prendiamo il dato richiesto e lo inoltriamo
+
+
+--->Scrittura in memoria
+    Metodo nabbo. Snoop_proxy trasmette l'indirizzo agli altri core i quali invalideranno la linea di cache relativa a
+    quel dato (sanno che non siamo in fase di polling in quanto poll_active è basso) e poi aggiorniamo la memoria. Non
+    saprei se si possono fare dei trip sul fatto shared/unshared per evitare scritture in memoria che richiederebbero
+    tempo.
+
+
+COSA DOVREBBERO FARE LE CACHE SU EVENTI DI SNOOP
+
+--->Fase di polling
+    Niente di particolare. Controlla in cache e gestisci i segnali elencati in "Lettura in memoria" quando poll_active=1
+    Bisognerebbe forse gestire le priorità della dcache (e credo anche della LSU)
+
+--->Fase di NON-pollling
+    Se non siamo in fase di polling basta invalidare la linea di cache corretta e fare tutti i discorsi che facevamo con
+    Zoni: controllare la LSU e lo store buffer. Potremmo risolvere la LSU controllando i registri che utilizza come
+    buffer per scrivere su bus, mentre per risolvere il problema della store_buffer ho pensato di aggiungere una coda
+    aggiuntiva dove salvare gli indirizzi da dei dati da NON scrivere in memoria perchè non validi. Non so se questo
+    metodo è fattibile (potrebbero esserci dei problemi), ma altre cose non mi sono venute in mente.
+
+PENSIERI FINALI
+In pratica dovremmo aggiungere lo snoop_proxy ed i nuovi segnali elencati nel disegno della struttura. Questa tecnica
+mi sembra un miglioramento rispetto a prima perchè evitiamo di fare letture in memoria se abbiamo un dato in una altra
+cache, anche se tutte le volte che scriviamo in memoria (ovvero con le store) dobbiamo invalidare linee di cache in
+tutti i cores tranne in quello che scrive.

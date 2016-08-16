@@ -1,0 +1,33 @@
+@startuml
+Title Core behavior when snooping takes place
+participant snoop_proxy
+
+box "core" #LightYellow
+    participant LSU
+    participant dcache
+    participant store_buffer
+end box
+
+snoop_proxy -> LSU : snoop_adr
+LSU -> dcache: forward snoop_adr
+LSU -> store_buffer : forward snoop_adr
+alt check poll_active
+    opt i have the datum
+        LSU <- dcache : forward datum
+    end
+    snoop_proxy <- LSU : poll_response (+ info)
+else poll is not active -> invalidate
+    opt LSU contains datum
+        LSU -> LSU : clear LSU registers
+    end
+    store_buffer -> store_buffer : save in discard buffer
+    note right
+        store_buffer will be responsible
+        to not send on the bus this datum
+    end note
+    opt dcache have datum
+        dcache <- dcache : invalidate datum
+    end
+
+end
+@enduml

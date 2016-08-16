@@ -1,0 +1,9 @@
+@startuml
+Title Write memory
+core -> snoop_proxy: send adr on dbus_adr with wb_we = 1
+
+snoop_proxy -> other_cores: forward adr (for cache invalidation)
+
+snoop_proxy -> Memory: write memory
+
+@enduml
