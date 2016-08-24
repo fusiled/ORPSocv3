@@ -91,6 +91,7 @@ module wb_arbiter
       .select (master_sel),
       .active (active));
 
+//TODO snoop in progress
    //Mux active master
    assign wbs_adr_o = wbm_adr_i[master_sel*aw+:aw];
    assign wbs_dat_o = wbm_dat_i[master_sel*dw+:dw];
