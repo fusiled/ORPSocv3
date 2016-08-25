@@ -37,8 +37,8 @@ module wb_snoop_arbiter
 
    //snoop interface
    output [num_cores*aw-1:0] snoop_adr_o,
-   output [num_cores-1:0] poll_active_o,
-   input [num_cores-1:0] poll_response_i,
+   output [1:0] snoop_type_o,
+   input [num_cores*2-1:0] snoop_response_i,
    input [num_cores*dw-1:0] snooped_dat_i
    );
 
@@ -48,22 +48,53 @@ module wb_snoop_arbiter
 // Parameters
 ///////////////////////////////////////////////////////////////////////////////
    
+   
    localparam master_sel_bits = num_cores > 1 ? `clog2(num_cores) : 1;
    wire [num_masters-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel;
    wire           active;
    wire [num_cores-1:0] arbiter_cyc;
    reg [aw-1:0] snoop_adr_reg;
-
+   reg [num_cores-1:0] saved_request;
+   
    reg [3:0] state;
    localparam IDLE = 4'b0001;
    localparam SNOOP_WRITE = 4'b0010;
    localparam SNOOP_READ = 4'b0100;
    localparam MEM_ACCESS = 4'b1000;
 
+   
+   localparam SNOOP_TYPE_IDLE = 2'b00;
+   localparam SNOOP_TYPE_READ = 2'b01;
+   localparam SNOOP_TYPE_WRITE = 2'b10;
+   localparam SNOOP_TYPE_NOT_USED = 2'b11;
+   
+   
    //tri_state stuff
    reg [num_cores-1:0] poll_result;
 
+   
+   //functions
+   function integer bintodec;
+      input [master_sel_bits-1:0] in;
+      begin
+		   bintodec = 0;
+		   integer i;
+           for( i = 0; i < master_sel_bits; i=i+1)
+		   begin
+		       if(in[i] == 1)
+			   begin
+			       bintodec|= 1<<i;
+			   end 
+		   end
+ 
+      end
+   endfunction
+   
+   
+   
+   
+   
    arbiter
      #(.NUM_PORTS (num_cores))
    arbiter0
@@ -73,15 +104,8 @@ module wb_snoop_arbiter
       .grant (grant),
       .select (master_sel),
       .active (active));
-
-
-   tri_state_cluster
-      #(.num_input(num_cores) )
-      tri_state_clu
-      (.in (poll_response_i),
-       .out(poll_result),
-       .en (poll_response_ready_i)
-      );
+	  
+   
 
 //TODO snoop in progress
    //Mux active master
@@ -99,48 +123,47 @@ module wb_snoop_arbiter
    assign wbm_err_o = ((wbs_err_i & active) << master_sel);
    assign wbm_rty_o = ((wbs_rty_i & active) << master_sel);
 
-   genvar i;
    genvar j;
 
-   generate
-      //check who wants to do something with the bus
-      for (i = 0; i < num_cores; i=i+1) begin
-         //detect him
-         always@(posedge wbm_cyc_i[i])
-         begin
-            //save adr to snoop
-            snoop_adr_reg = wbm_adr_i[(i+1)*aw-1:i*aw];
-            //decide what to do
-            if(wbm_we_i[i]==1)
-            begin
-               //tell cores to invalidate datum
-               poll_active_o = 0;
-            end
-            else
-            begin
-               //block arbitration
-               arbiter_cyc = 0;
-               state = SNOOP_READ;
-               poll_active_o = ~ 0;
-            end
-            //send address to cores
-            for(j=0; j<num_cores; j=j+1) begin
-               snoop_adr_o[(i+1)*aw-1:i*aw]= snoop_adr_reg;
-            end
-         end
-      end
-   endgenerate
-
+     //check who wants to do something with the bus
+	 //detect it
+	 always@(master_sel)
+	 begin
+		 if(active == 1)
+		 begin
+			//save adr to snoop
+			snoop_adr_reg = wbm_adr_i[(master_sel+1)*aw-1:master_sel*aw];
+			//decide what to do
+			if(wbm_we_i[master_sel]==1)
+			begin
+			   //tell cores to invalidate datum
+			   snoop_type_o = SNOOP_TYPE_WRITE;
+			end
+			else
+			begin
+			   //block arbitration
+			   arbiter_cyc = 0;
+			   saved_request = 1 << bintodec(master_sel);			   			   
+			   state = SNOOP_READ;
+			   snoop_type_o = SNOOP_TYPE_READ;
+			end
+			//send address to cores
+			for(j=0; j<num_cores; j=j+1) begin
+			   snoop_adr_o[(master_sel+1)*aw-1:master_sel*aw]= snoop_adr_reg;
+			end
+		 end
+	end
 
    always@(posedge wb_clk_i)
    begin
       case(state)
          IDLE: begin
             arbiter_cyc = wbm_cyc_i;
-            poll_active_o = Z;
+            snoop_type_o = SNOOP_TYPE_IDLE;
             state = IDLE;
          end
-         SNOOP_READ: 
+         SNOOP_READ:
+			//does someone have the datum requested
             case (poll_response_flag)
                1'b1:
                begin
@@ -160,7 +183,9 @@ module wb_snoop_arbiter
          end
          MEM_ACCESS: begin
             //normal flow. handle proxy
-            state = IDLE;
+            arbiter_cyc = saved_request;
+			begin
+			end
          end
          default: begin
             state = IDLE;

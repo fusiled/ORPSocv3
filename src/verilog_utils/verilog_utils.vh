@@ -38,6 +38,7 @@
 
 `endif // _VERILOG_UTILS_VH_
 
+
 function integer clog2;
 input integer in;
 begin
