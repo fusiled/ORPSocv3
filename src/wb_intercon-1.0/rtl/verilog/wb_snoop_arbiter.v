@@ -54,9 +54,9 @@ module wb_snoop_arbiter
    localparam master_sel_bits = num_cores > 1 ? `clog2(num_cores) : 1;
    wire [num_cores-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel;
-   wire           active;
+   wire active;
 
-   reg poll_response_flag;
+   reg [1:0] poll_response_flag;
 
    reg [num_cores-1:0] arbiter_cyc;
    reg [aw-1:0] snoop_adr_reg;
@@ -88,7 +88,6 @@ module wb_snoop_arbiter
    reg [num_cores-1:0] poll_result;
    reg [num_cores-1:0]snoop_datum_owner;
    reg [master_sel_bits-1:0] saved_master_sel;
-   integer snoop_dat_owner;
 
    
    arbiter
@@ -125,11 +124,11 @@ module wb_snoop_arbiter
 
    //check who wants to do something with the bus
 	//detect it
-	 always@(master_sel)
+	 always@(master_sel, active)
 	 begin: master_sel_sensitivity_block
       integer j;
-		 if(mem_access_active == 0)
-		 begin
+		if(mem_access_active == 0 && active==1)
+		begin
 			//save adr to snoop
 			snoop_adr_reg = wbm_adr_i[master_sel*aw+:aw];
          saved_master_sel = master_sel;
@@ -154,8 +153,13 @@ module wb_snoop_arbiter
 		 end
 	end
 
-   always@(posedge wb_clk_i)
+   always@(posedge wb_clk_i, wb_rst_i)
    begin
+      //reset condition
+      if(wb_rst_i == 1)
+      begin
+         state = IDLE;
+      end
       case(state)
          IDLE: 
          begin
@@ -222,7 +226,7 @@ module wb_snoop_arbiter
             if(snoop_response_i[2*i+:2] == SNOOP_READ_DATA_POSITIVE)
             begin
                poll_response_flag= POLL_RESPONSE_POSITIVE;
-               snoop_dat_owner = i;
+               snooped_dat = snooped_dat_i[dw*i+:dw];
             end
          end
       end
