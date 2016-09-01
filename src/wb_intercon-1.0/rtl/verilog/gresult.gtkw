@@ -1,0 +1,42 @@
+[*]
+[*] GTKWave Analyzer v3.3.72 (w)1999-2016 BSI
+[*] Sat Aug 27 15:27:22 2016
+[*]
+[dumpfile] "/home/fusiled/Desktop/orpsocV3/src/wb_intercon-1.0/rtl/verilog/result.vcd"
+[dumpfile_mtime] "Sat Aug 27 15:26:36 2016"
+[dumpfile_size] 13334
+[savefile] "/home/fusiled/Desktop/orpsocV3/src/wb_intercon-1.0/rtl/verilog/gresult.gtkw"
+[timestart] 0
+[size] 1366 742
+[pos] 0 0
+*-16.000000 95300 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] wb_snoop_arbiter_tb.
+[treeopen] wb_snoop_arbiter_tb.uut.
+[sst_width] 244
+[signals_width] 227
+[sst_expanded] 1
+[sst_vpaned_height] 207
+@28
+wb_snoop_arbiter_tb.rst
+wb_snoop_arbiter_tb.clk
+wb_snoop_arbiter_tb.uut.wbm_ack_o[3:0]
+wb_snoop_arbiter_tb.uut.wbm_cyc_i[3:0]
+wb_snoop_arbiter_tb.uut.state[3:0]
+wb_snoop_arbiter_tb.uut.snoop_type_o[1:0]
+wb_snoop_arbiter_tb.uut.snoop_response_i[7:0]
+@22
+wb_snoop_arbiter_tb.uut.snooped_dat_i[127:0]
+wb_snoop_arbiter_tb.uut.snooped_dat[31:0]
+@23
+wb_snoop_arbiter_tb.uut.wbm_dat_o[127:0]
+@28
+wb_snoop_arbiter_tb.uut.arbiter_cyc[3:0]
+@800200
+-arbiter
+@28
+wb_snoop_arbiter_tb.uut.master_sel[1:0]
+wb_snoop_arbiter_tb.uut.active
+@1000200
+-arbiter
+[pattern_trace] 1
+[pattern_trace] 0
