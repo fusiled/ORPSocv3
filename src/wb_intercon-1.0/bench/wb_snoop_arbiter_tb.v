@@ -14,24 +14,18 @@ module wb_snoop_arbiter_tb;
   localparam SNOOP_WRITE = 4'b0010;
   localparam SNOOP_READ = 4'b0100;
   localparam MEM_ACCESS = 4'b1000;
- 
-  localparam SNOOP_TYPE_IDLE = 2'b00;
-  localparam SNOOP_TYPE_READ = 2'b01;
-  localparam SNOOP_TYPE_WRITE = 2'b10;
-  localparam SNOOP_TYPE_NOT_USED = 2'b11;
+
+   
+  localparam SNOOP_TYPE_IDLE = 1'b0;
+  localparam SNOOP_TYPE_READ = 1'b1;
 
   localparam POLL_RESPONSE_UNDEFINED = 2'b10;
   localparam POLL_RESPONSE_POSITIVE = 2'b11;
   localparam POLL_RESPONSE_NEGATIVE = 2'b00;
 
-  localparam SNOOP_READ_DATA_POSITIVE = 2'b11;
-  localparam SNOOP_READ_DATA_NEGATIVE = 2'b00;
-  localparam SNOOP_READ_POLL_FAILED = 0;
-  localparam SNOOP_READ_DATA_UNDEFINED = 2'b10;
-
 // Generate a clk
-    reg clk;
-    reg rst;
+  reg clk;
+  reg rst;
 
    reg [num_cores*aw-1:0]  m_adr_i;
    reg [num_cores*dw-1:0]  m_dat_i;
@@ -63,8 +57,9 @@ module wb_snoop_arbiter_tb;
 
    //snoop interface
    wire reg [num_cores*aw-1:0] op_adr_o;
-   wire reg [1:0] op_type_o;
-   reg [num_cores*2-1:0] op_response_i;
+   wire reg op_type_o;
+   reg [num_cores-1:0] op_ack_i;
+   reg [num_cores-1:0] op_valid_dat_i;
    reg [num_cores*dw-1:0] oped_dat_i;
 
 
@@ -76,6 +71,8 @@ module wb_snoop_arbiter_tb;
 
     m_cyc_i=0;
     m_we_i=0;
+    op_ack_i=0;
+    op_valid_dat_i=0;
    end
 
     always #1 clk = !clk;
@@ -120,7 +117,8 @@ module wb_snoop_arbiter_tb;
    //snoop interface
    .snoop_adr_o (op_adr_o),
    .snoop_type_o (op_type_o), 
-   .snoop_response_i (op_response_i),
+   .snoop_ack_i  (op_ack_i),
+   .snoop_valid_dat_i(op_valid_dat_i),
    .snooped_dat_i (oped_dat_i)
    );
 
@@ -132,8 +130,9 @@ module wb_snoop_arbiter_tb;
 
     initial begin
     //TEST1 = access to arbiter, fail snoop poll, access to memory
-    #10
+    #5
     rst=0;
+    $display("Start Test T1");
     //everyone requests for something to read
     m_cyc_i= ~0;
     m_we_i = 0;
@@ -141,87 +140,108 @@ module wb_snoop_arbiter_tb;
     `ifdef VERBOSE
     if(op_type_o==SNOOP_TYPE_READ)
     begin
-      $display("[OK] snoop type read is active");
+      $display("[OK][T1.1] snoop type read is active");
     end
     else
     begin
-      $display("****[ERROR] something is wrong with snoop type switch to read mode");
+      $display("****[ERROR][T1.1] something is wrong with snoop type switch to read mode");
+      $finish;
     end
     `endif
-    #10
+    #5
     //no one has datum
-    op_response_i=0;
-    #10
+    op_ack_i = 1;
+    op_valid_dat_i=0;
+    #5
+    op_ack_i = {num_cores{1'b1}};
+    op_valid_dat_i=0;
+    #5
     `ifdef VERBOSE
     if(uut.state == MEM_ACCESS)
     begin
-      $display("[OK] we're accessing to memory");
+      $display("[OK][T1.2] we're accessing to memory");
     end
     else
     begin
-      $display("****[ERROR] not in MEM_ACCESS state. something is wrong");
+      $display("****[ERROR][T1.2] not in MEM_ACCESS state. something is wrong");
+      $finish;
     end
     `endif
-    #10
+    #5
     //transmit datum from memory to core
     s_ack_i=1;
     s_dat_i=1;
-    #10
+    #5
     //deassert cyc -> stop slave. Core has received the datum
     m_cyc_i[uut.master_sel]=0;
     s_dat_i=0;
     s_ack_i=0;
     //END TEST1
+    $display("End Test T1");
     //Short break
-    #10
+    #5
     rst=1;
-    #40
+    #15
     rst=0;
     //like initial condition except that now wbm_cyc_i = 1110
     //TEST2 -> access to arbiter, positive snoop poll (core0 has the datum), forward datum
+    $display("Start Test T2");
+    //XXX must wait some time (put 10 instead of 5)... a bottleneck?
     #10
     //one core has datum (suppose core 0)
-    op_response_i=SNOOP_READ_DATA_POSITIVE ;
+    op_ack_i=1;
+    op_valid_dat_i=1;
     oped_dat_i=64;
     #10
     //check if the datum is forwarded correctly
     `ifdef VERBOSE
     if(m_dat_o[32:0]==64 && m_ack_o[1]==1)
     begin
-      $display("[OK] data has been forwarded properly");
+      $display("[OK][T2.1] data has been forwarded properly");
     end
     else
     begin
-      $display("****[ERROR] something is wrong with data forwarding in case of a successful poll");
+      $display("****[ERROR][T2.1] something is wrong with data forwarding in case of a successful poll");
+      $finish;
     end
     `endif
     //deassert cyc -> stop slave. Core has received the datum
     m_cyc_i[1]=0;
+    $display("End Test T2");
     //END TEST2
     //Short break
-    #10
+    #5
     rst=1;
-    #40
+    #15
     rst=0;
     m_we_i[2] = 1;
     m_dat_i[dw*2+:dw]=55;
     //TEST3 -> access to arbiter with the intention of WRITING MEMORY
-    #20
+    #5
     //in theory we must do nothing except to let the normal flow of master-slave
     //pass through the arbiter
     //just let the slave respond
     //transmit datum from memory to core
+    if(uut.state==IDLE)
+    begin
+      $display("[OK][T3.1] Remaining in idle state while writing.");
+    end
+    else
+    begin
+      $display("****[ERROR][T3.1] Error in state handle during memory write. The state should reamins IDLE, but it's not");
+      $finish;
+    end
     s_ack_i=1;
     s_dat_i=1;
-    #10
+    #5
     //deassert cyc -> stop slave. Core has received the datum
     m_cyc_i[uut.master_sel]=0;
     s_dat_i=0;
     s_ack_i=0;
-    #10
+    #5
     //end of everything
     rst=1;
-    #100
+    #10
     $finish;
     end
 

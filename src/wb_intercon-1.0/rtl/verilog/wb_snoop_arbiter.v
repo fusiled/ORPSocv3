@@ -1,3 +1,7 @@
+//TODO write do nothing with other cores
+//TODO fix code using ise
+
+
 module wb_snoop_arbiter
  #(parameter dw = 32,
    parameter aw = 32,
@@ -36,9 +40,10 @@ module wb_snoop_arbiter
 
 
    //snoop interface
-   output reg [num_cores*aw-1:0] snoop_adr_o,
-   output reg [1:0] snoop_type_o,
-   input [num_cores*2-1:0] snoop_response_i,
+   output [num_cores*aw-1:0] snoop_adr_o,
+   output snoop_type_o,
+   input [num_cores-1:0] snoop_ack_i,
+   input [num_cores-1:0] snoop_valid_dat_i,
    input [num_cores*dw-1:0] snooped_dat_i
    );
 
@@ -51,7 +56,7 @@ module wb_snoop_arbiter
 
    reg [dw-1:0] snooped_dat;
    
-   localparam master_sel_bits = num_cores > 1 ? `clog2(num_cores) : 1;
+   localparam master_sel_bits = num_cores > 1 ? clog2(num_cores) : 1;
    wire [num_cores-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel;
    wire active;
@@ -64,30 +69,27 @@ module wb_snoop_arbiter
    reg mem_access_active;
    
    reg [3:0] state;
+   reg [3:0] next_state;
    localparam IDLE = 4'b0001;
    localparam SNOOP_WRITE = 4'b0010;
    localparam SNOOP_READ = 4'b0100;
    localparam MEM_ACCESS = 4'b1000;
-
    
-   localparam SNOOP_TYPE_IDLE = 2'b00;
-   localparam SNOOP_TYPE_READ = 2'b01;
-   localparam SNOOP_TYPE_WRITE = 2'b10;
-   localparam SNOOP_TYPE_NOT_USED = 2'b11;
+   localparam SNOOP_TYPE_IDLE = 1'b0;
+   localparam SNOOP_TYPE_READ = 1'b1;
 
    localparam POLL_RESPONSE_UNDEFINED = 2'b10;
    localparam POLL_RESPONSE_POSITIVE = 2'b11;
    localparam POLL_RESPONSE_NEGATIVE = 2'b00;
-
-   localparam SNOOP_READ_DATA_POSITIVE = 2'b11;
-   localparam SNOOP_READ_DATA_NEGATIVE = 2'b00;
-   localparam SNOOP_READ_POLL_FAILED = 0;
-   localparam SNOOP_READ_DATA_UNDEFINED = 2'b10;
    
    
    reg [num_cores-1:0] poll_result;
    reg [num_cores-1:0]snoop_datum_owner;
    reg [master_sel_bits-1:0] saved_master_sel;
+   reg snoop_read_ready;
+   wire end_of_transaction;
+
+   wire snoop_type;
 
    
    arbiter
@@ -96,7 +98,6 @@ module wb_snoop_arbiter
      (.clk (wb_clk_i),
       .rst (wb_rst_i),
       .request (arbiter_cyc),
-      .grant (grant),
       .select (master_sel),
       .active (active));
 	  
@@ -116,120 +117,136 @@ module wb_snoop_arbiter
    assign wbm_dat_o = poll_response_flag == POLL_RESPONSE_POSITIVE ?
                            {num_cores{snooped_dat}} :
                            {num_cores{wbs_dat_i}};
+
    assign wbm_ack_o = poll_response_flag == POLL_RESPONSE_POSITIVE ? 
-                           1 << saved_master_sel :
+                          1 << saved_master_sel :
                            ((wbs_ack_i & active) << master_sel);
    assign wbm_err_o = ((wbs_err_i & active) << master_sel);
    assign wbm_rty_o = ((wbs_rty_i & active) << master_sel);
 
-   //check who wants to do something with the bus
-	//detect it
-	 always@(master_sel, active)
-	 begin: master_sel_sensitivity_block
-      integer j;
-		if(mem_access_active == 0 && active==1)
-		begin
-			//save adr to snoop
-			snoop_adr_reg = wbm_adr_i[master_sel*aw+:aw];
-         saved_master_sel = master_sel;
-			//decide what to do in case of a read or a write
-			if(wbm_we_i[master_sel]==1)
-			begin
-			   //tell cores to invalidate datum
-			   snoop_type_o = SNOOP_TYPE_WRITE;
-			end
-			else
-			begin
-			   //block arbitration
-			   arbiter_cyc = 0;
-			   saved_request = wbm_cyc_i;			   			   
-			   state = SNOOP_READ;
-			   snoop_type_o = SNOOP_TYPE_READ;
-			end
-			//send address to cores
-			for(j=0; j<num_cores; j=j+1) begin
-			   snoop_adr_o[master_sel*aw+:aw]= snoop_adr_reg;
-			end
-		 end
-	end
+   assign snoop_type = (state == SNOOP_READ ) ? SNOOP_TYPE_READ : SNOOP_TYPE_IDLE ;
+   assign snoop_type_o = snoop_type;
 
-   always@(posedge wb_clk_i, wb_rst_i)
+
+   assign end_of_transaction = ( (state == SNOOP_READ && wbm_cyc_i[saved_master_sel]==0) ||
+                                 (state == MEM_ACCESS && wbm_cyc_i[master_sel]==0) ) ? 1 : 0;
+
+
+   assign snoop_adr_o = {num_cores{snoop_adr_reg}};
+
+
+   always@(posedge wb_clk_i)
    begin
       //reset condition
-      if(wb_rst_i == 1)
+      if(wb_rst_i)
       begin
-         state = IDLE;
+         next_state = IDLE;
       end
+      state = next_state;
       case(state)
-         IDLE: 
+         IDLE:
          begin
-            mem_access_active = 0;
-            arbiter_cyc = wbm_cyc_i;
-            snoop_type_o = SNOOP_TYPE_IDLE;
-            poll_response_flag = POLL_RESPONSE_UNDEFINED;
+            next_state = IDLE;
+            if(active && wbm_we_i[master_sel]==0)
+            begin
+               next_state = SNOOP_READ;
+            end
          end
          SNOOP_READ:
          begin
-            snoop_type_o = SNOOP_TYPE_READ;
-			//does someone have the datum requested ?
-            case (poll_response_flag)
-               POLL_RESPONSE_POSITIVE:
-               begin
-                  //transmit datum received from a core
-                  //see assign statement
-               end 
-               POLL_RESPONSE_NEGATIVE:
-               begin
-                  //cores don't have datum -> request it to memory
-                  state = MEM_ACCESS;
-               end
-               default : 
-               begin
-                  //wait for cores response
-               end
-            endcase
+            next_state = SNOOP_READ;
+            if(end_of_transaction)
+            begin
+               next_state = IDLE;
+            end
+            if(poll_response_flag == POLL_RESPONSE_NEGATIVE)
+            begin
+               next_state = MEM_ACCESS;
+            end
          end
-         MEM_ACCESS: 
+         MEM_ACCESS:
          begin
-            //normal flow. handle proxy
-            mem_access_active = ~ 0;
-            arbiter_cyc = saved_request;
+            next_state = MEM_ACCESS;
+            if(end_of_transaction==1)
+            begin
+               next_state = IDLE;
+            end
          end
-         default: 
+         default:
          begin
-            state = IDLE;
+            next_state = IDLE;
          end
       endcase
    end
 
-   genvar i;
-   for(i=0; i<num_cores; i= i+1)
-   begin
-      always @(negedge wbm_cyc_i[i])
-      begin
-         state = IDLE;
-      end
+   always@(*)
+   begin: fsm_sensitivity_block
+      arbiter_cyc = wbm_cyc_i;
+      snoop_adr_reg = 0;
+      saved_master_sel = 0;
+      saved_request = 0;
+      case(state)
+         IDLE: 
+         begin
+            arbiter_cyc = wbm_cyc_i;
+            snoop_adr_reg = 0;
+            saved_master_sel = 0;
+            saved_request = 0;
+         end
+         SNOOP_READ:
+         begin
+            //block arbitration, save the selected core and the current request array
+            arbiter_cyc = 0;
+            snoop_adr_reg = wbm_adr_i[master_sel*aw+:aw];
+            saved_master_sel = master_sel;
+            saved_request = wbm_cyc_i;
+         end
+         MEM_ACCESS: 
+         begin
+            //restore state before snoop read and access to memory
+            arbiter_cyc = saved_request;
+            snoop_adr_reg = 0;
+            saved_master_sel = master_sel;
+            saved_request = 0;
+         end
+         default: 
+         begin
+            arbiter_cyc = wbm_cyc_i;
+            snoop_adr_reg = 0;
+            saved_master_sel = 0;
+            saved_request = 0;
+         end
+      endcase
    end
 
-   always @(snoop_response_i) 
-   begin: poll_response_sensitivity_block
-      integer i;
-      //cores don't have the datum.
-      if(snoop_response_i == SNOOP_READ_POLL_FAILED)
-      begin
-         poll_response_flag = POLL_RESPONSE_NEGATIVE;
+   always@(*)
+   begin
+      snooped_dat=0;
+      if(snoop_type_o==SNOOP_TYPE_READ)
+      begin: snoop_read_active
+         integer k;
+         poll_response_flag = POLL_RESPONSE_UNDEFINED;
+         for(k=0; k<num_cores; k = k+1)
+         begin
+            if(snoop_ack_i[k]==1)
+            begin
+               if(snoop_valid_dat_i[k]==1)
+               begin
+                  poll_response_flag = POLL_RESPONSE_POSITIVE;
+                  snooped_dat = snooped_dat_i[dw*k+:dw];
+               end
+            end
+         end
+         if(snoop_ack_i == {num_cores{1'b1}} && snoop_valid_dat_i==0 && poll_response_flag == POLL_RESPONSE_UNDEFINED)
+         begin
+            poll_response_flag = POLL_RESPONSE_NEGATIVE;
+         end
       end
       else
       begin
-         for(i=0; i<num_cores; i = i+1)
-         begin
-            if(snoop_response_i[2*i+:2] == SNOOP_READ_DATA_POSITIVE)
-            begin
-               poll_response_flag= POLL_RESPONSE_POSITIVE;
-               snooped_dat = snooped_dat_i[dw*i+:dw];
-            end
-         end
+         snooped_dat = 0;
+         poll_response_flag = POLL_RESPONSE_UNDEFINED;
       end
    end
-   
-endmodule // wb_arbiter
+
+endmodule // wb_snoop_arbiter
