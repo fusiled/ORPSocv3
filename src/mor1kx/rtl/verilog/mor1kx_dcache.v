@@ -60,6 +60,9 @@ module mor1kx_dcache
     output            snoop_hit_o,
     output [31:0]     snoop_dat_o,
     output          snoop_valid_dat_o,
+    //tells to dcache that outside has received the snooped datum. This should signal a state migration
+    //from SNOOPHIT to IDLE. master must deassert this signal.
+    input           snoop_ack_i,
 
     // SPR interface
     input [15:0]          spr_bus_addr_i,
@@ -72,12 +75,13 @@ module mor1kx_dcache
     );
 
    // States
-   localparam IDLE    = 6'b000001;
-   localparam READ    = 6'b000010;
-   localparam WRITE   = 6'b000100;
-   localparam REFILL    = 6'b001000;
-   localparam INVALIDATE  = 6'b010000;
-   localparam SNOOPHIT    = 6'b100000;
+   localparam IDLE    = 7'b0000001;
+   localparam READ    = 7'b0000010;
+   localparam WRITE   = 7'b0000100;
+   localparam REFILL    = 7'b0001000;
+   localparam INVALIDATE  = 7'b0010000;
+   localparam SNOOPHIT    = 7'b0100000;
+   localparam SNOOPHIT_COUNTER = 7'b1000000;
 
    // Address space in bytes for a way
    localparam WAY_WIDTH = OPTION_DCACHE_BLOCK_WIDTH + OPTION_DCACHE_SET_WIDTH;
@@ -117,11 +121,12 @@ module mor1kx_dcache
    localparam TAG_LRU_LSB = TAG_LRU_MSB - TAG_LRU_WIDTH + 1;
 
    // FSM state signals
-   reg [5:0]            state;
+   reg [6:0]            state;
    wire             read;  
    wire             write;
    wire             refill;
    wire         snoop_hit_state;
+   wire         snoop_hit_counter_state;
 
    reg [WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH] invalidate_adr;
    wire [31:0]            next_refill_adr;
@@ -226,9 +231,11 @@ module mor1kx_dcache
    // Wheter the snooped data is retrieved.
    reg [OPTION_OPERAND_WIDTH-1:0]         snoop_dat;
    reg            snoop_valid_dat;
+   // Snooped counter signal
+   reg      snoop_counter;
 
    assign snoop_hit_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_hit : 0;
-   assign snoop_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_dat : 32'bx;
+   assign snoop_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_dat : {OPTION_OPERAND_WIDTH{1'b0}};
    assign snoop_valid_dat_o = (OPTION_DCACHE_SNOOP != "NONE") ? snoop_valid_dat : 0;
 
    genvar             i;
@@ -252,7 +259,7 @@ module mor1kx_dcache
       for (i = 0; i < OPTION_DCACHE_WAYS; i=i+1) begin : ways
       assign way_raddr[i] = cpu_adr_i[WAY_WIDTH-1:2];
       // Update the muxed wires
-      assign way_raddr_muxed[i] = (snoop_hit & snoop_hit_state) ? snoop_adr_i[WAY_WIDTH-1:2] : way_raddr[i];
+      assign way_raddr_muxed[i] = (snoop_hit & (snoop_hit_state | snoop_hit_counter_state)) ? snoop_adr_i[WAY_WIDTH-1:2] : way_raddr[i];
       assign way_waddr[i] = write ? cpu_adr_match_i[WAY_WIDTH-1:2] :
                  wradr_i[WAY_WIDTH-1:2];
       assign way_din[i] = way_wr_dat;
@@ -287,6 +294,7 @@ module mor1kx_dcache
           |snoop_way_hit & snoop_check;
 
    integer w0;
+
    always @(*) begin
       cpu_dat_o = {OPTION_OPERAND_WIDTH{1'bx}};
       // Set the default value for the snoop dat output to undefined.
@@ -301,7 +309,7 @@ module mor1kx_dcache
 
 
         // Only when I am in the SNOOPHIT state I change the value of the snoop_dat_o
-    if (snoop_hit && snoop_hit_state) begin
+    if (snoop_hit && (snoop_hit_state | snoop_hit_counter_state)) begin
       for (w0 = 0; w0 < OPTION_DCACHE_WAYS; w0 = w0 + 1) begin
         if (snoop_way_hit[w0]) begin
         // In this situation the data_ram has on its output wire the snooped data.
@@ -330,6 +338,7 @@ module mor1kx_dcache
    assign read = (state == READ);
    assign write = (state == WRITE);
    assign snoop_hit_state = (state == SNOOPHIT);
+   assign snoop_hit_counter_state = (state == SNOOPHIT_COUNTER);
 
    assign refill_o = refill;
 
@@ -406,15 +415,14 @@ module mor1kx_dcache
 
    case (state)
      IDLE: begin
-        if (snoop_hit) begin
-          // If there was a snoop_hit
-          //
-          // Go to the dedicated state where we extract the data from the memory.
-          //snoop_valid_dat <= 0;
+          snoop_valid_dat <= 1'b0;
+          if (snoop_hit) begin
+            // If there was a snoop_hit
+            // Go to the dedicated state where we extract the data from the memory.
+            state <= SNOOPHIT;
+          end else
 
-          state <= SNOOPHIT;
-
-        end else if (invalidate) begin
+          if (invalidate) begin
              // If there is an invalidation request
              //
              // Store address in invalidate_adr that is muxed to the tag
@@ -424,9 +432,9 @@ module mor1kx_dcache
              // Change to invalidate state that actually accesses
              // the tag memory
              state <= INVALIDATE;
-        end else if (cpu_we_i | write_pending)
+          end else if (cpu_we_i | write_pending)
             state <= WRITE;
-        else if (cpu_req_i)
+          else if (cpu_req_i)
             state <= READ;
      end
 
@@ -498,13 +506,25 @@ module mor1kx_dcache
      end
 
      SNOOPHIT: begin
-        if (snoop_valid_dat) begin
-          state <= IDLE;
-          // The snoop has been handled, thus I reset the special registers
-          snoop_valid_dat <= 0;
-          snoop_dat <= 32'bx;
-        end
+        // We immediately go in a special case, needed to count the clock cycles used to
+        // retrieved the snooped data
+        snoop_counter <= 0;
+        state <= SNOOPHIT_COUNTER;
+     end
 
+     SNOOPHIT_COUNTER: begin
+        snoop_counter <= snoop_counter + 1;
+        // After one clock cycle in which we are in this state the snooped data has been retrieved
+        if (snoop_counter >= 1) begin
+          snoop_valid_dat <= 1'b1;
+        end
+        // Then we only wait for the end of the snooping operations, through an input signal
+        if (snoop_ack_i) begin
+          state <= IDLE;
+          // Reset the registers
+          snoop_valid_dat <= 1'b0;
+          snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+        end
      end
 
 
@@ -679,9 +699,16 @@ module mor1kx_dcache
      end
 
      SNOOPHIT: begin
-        // To be sure the write enable wire is zeroed
-        way_we = {(OPTION_DCACHE_WAYS){1'b0}};
+        /** Nothing to do **/
+     end
 
+     SNOOPHIT_COUNTER: begin
+         if (snoop_valid_dat) begin
+          // To be sure the write enable wire is zeroed
+          way_we = {(OPTION_DCACHE_WAYS){1'b0}};
+        end
+        // No operation needed since all the retrieving operations are handled outside,
+        // directly with the use of wires and regs.
      end
 
      default: begin
@@ -689,27 +716,6 @@ module mor1kx_dcache
    endcase
       end
    end
-
-   // The address that need to be passed to the data_ram to obtain the snooped data
-   // is automatically updated with the assign on the way_raddr_muxed wire.
-   // Hence, we need just to wait for a change of the output of the data ram to 
-   // consider the snooped operation finished. 
-   // We suppose that we just need to wait for the next posedge clock cycle since the
-   // reading of a data requires exactly one cycles and there is no way to include
-   // an array into the sensitivity list.
-   // In addition this choice is "a little bit" more secure than the one described
-   // above since it can happens that the snooped data and the previous one are exactly
-   // the same. 
-   //XXX moved bu Fusi here. ask to Simo if it's possible to migrate this part in the state machine
-   always @(posedge clk) begin //: end_of_snooped_data_retrieving_
-    // Set to 1 the snoop_valid_dat signal to notify both the cache and the 
-    // "external" that the snooped data has been retrieved.
-      if (state == SNOOPHIT) begin
-       snoop_valid_dat <= 1;
-     end
-    // The data will be set to the correct value in the dedicated code above.
-   end
-
 
    generate
       for (i = 0; i < OPTION_DCACHE_WAYS; i=i+1) begin : way_memories
