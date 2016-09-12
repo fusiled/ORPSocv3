@@ -109,6 +109,9 @@ module mor1kx_lsu_cappuccino
     input [OPTION_OPERAND_WIDTH-1:0]  dbus_dat_i,
     input 			      pipeline_flush_i,
 
+    output				  snoop_response_ack_o,	// When the response is available
+    output 				  snoop_response_hit_o,	// Snoop request's response.
+    input 				  snoop_req_i,
     input [31:0] 		      snoop_adr_i,
     input 			      snoop_en_i
     );
@@ -203,13 +206,27 @@ module mor1kx_lsu_cappuccino
    reg 				     atomic_reserve;
    wire				     swa_success;
 
+   // Snoop operations
    wire 			     snoop_valid;
    wire 			     dc_snoop_hit;
+   reg 				 dc_snoop_ack;
+   wire 				 dc_snoop_valid_dat;
+   reg [OPTION_OPERAND_WIDTH-1:0] 	dc_snoop_dat;
+   wire [OPTION_OPERAND_WIDTH-1:0]  dc_snoop_dat_wire;
+   reg [OPTION_OPERAND_WIDTH-1:0]	snoop_dat;
+   reg 					snoop_address_conflict;
+
+   reg 					snoop_response_hit;
+   reg 					snoop_response_ack;
 
    // We have to mask out our snooped bus accesses
    assign snoop_valid = (OPTION_DCACHE_SNOOP != "NONE") ?
                         snoop_en_i & !((snoop_adr_i == dbus_adr_o) & dbus_ack_i) :
                         0;
+
+   assign snoop_response_ack_o = snoop_response_ack;
+   assign snoop_response_hit_o = snoop_response_hit;
+   assign dc_snoop_dat_wire = dc_snoop_dat;
 
    assign ctrl_op_lsu = ctrl_op_lsu_load_i | ctrl_op_lsu_store_i;
 
@@ -292,11 +309,11 @@ module mor1kx_lsu_cappuccino
       case(ctrl_lsu_adr_i[1:0])
         2'b00:
 	      dbus_bsel = 4'b1000;
-	      2'b01:
-        dbus_bsel = 4'b0100;
-	      2'b10:
+	    2'b01:
+          dbus_bsel = 4'b0100;
+	    2'b10:
 	      dbus_bsel = 4'b0010;
-	      2'b11:
+	    2'b11:
 	      dbus_bsel = 4'b0001;
 	 endcase
        2'b01: // halfword access
@@ -349,7 +366,8 @@ module mor1kx_lsu_cappuccino
      READ		= 3'd1,
      WRITE		= 3'd2,
      TLB_RELOAD		= 3'd3,
-     DC_REFILL		= 3'd4;
+     DC_REFILL		= 3'd4,
+     SNOOP_MANAGEMENT	= 3'd5;
 
    reg [2:0] state;
 
@@ -407,41 +425,51 @@ module mor1kx_lsu_cappuccino
 	   dbus_bsel_o <= 4'hf;
 	   dbus_atomic <= 0;
 	   last_write <= 0;
-	   if (store_buffer_write | !store_buffer_empty) begin
-	      state <= WRITE;
-	   end else
-     if (ctrl_op_lsu & dbus_access & !dc_refill & !dbus_ack &
-			             !dbus_err & !except_dbus & !access_done &
-			             !pipeline_flush_i) begin
-      if (tlb_reload_req) begin
-    		 dbus_adr <= tlb_reload_addr;
-    		 dbus_req_o <= 1;
-         state <= TLB_RELOAD;
-      end else
-      if (dmmu_enable_i) begin
-        dbus_adr <= dmmu_phys_addr;
-        if (!tlb_miss & !pagefault & !except_align) begin
-          if (ctrl_op_lsu_load_i) begin
-		        dbus_req_o <= 1;
-		        dbus_bsel_o <= dbus_bsel;
-		        state <= READ;
-          end
-        end
-      end else
-      if (!except_align) begin
-        dbus_adr <= ctrl_lsu_adr_i;
-        if (ctrl_op_lsu_load_i) begin
-          dbus_req_o <= 1;
-          dbus_bsel_o <= dbus_bsel;
-          state <= READ;
-        end
-      end
-    end else
-    if (dc_refill_req) begin
-      dbus_req_o <= 1;
-      dbus_adr <= dc_adr_match;
-      state <= DC_REFILL;
-    end
+	   	// The first time we reach the idle state we handle the snoop requests, if any
+	   	// Note: to avoid a conflict, we check that the store buffer is empty.
+	   	// This conflict happens when the snoop address is the same of the last data
+	   	// written into the store buffer. In this way we have to wait at most one write
+	   	// since the dcache is write-trough, but we ensure that the conflict is automatically
+	   	// solved since there is no data into the store buffer (and thus neither that data)
+	   	if (store_buffer_empty & snoop_req_i) begin
+	   		state <= SNOOP_MANAGEMENT;
+	   	end else
+	   	// If there are no snoop requests, we "return in normal mode".
+	   	if (store_buffer_write | !store_buffer_empty) begin
+	   		state <= WRITE;
+	   	end else
+	    if (ctrl_op_lsu & dbus_access & !dc_refill & !dbus_ack &
+				             !dbus_err & !except_dbus & !access_done &
+				             !pipeline_flush_i) begin
+      		if (tlb_reload_req) begin
+	    		dbus_adr <= tlb_reload_addr;
+	    		dbus_req_o <= 1;
+	         	state <= TLB_RELOAD;
+      		end else
+      		if (dmmu_enable_i) begin
+        		dbus_adr <= dmmu_phys_addr;
+        		if (!tlb_miss & !pagefault & !except_align) begin
+          			if (ctrl_op_lsu_load_i) begin
+				        dbus_req_o <= 1;
+				        dbus_bsel_o <= dbus_bsel;
+				        state <= READ;
+          			end
+        		end
+      		end else
+      		if (!except_align) begin
+        		dbus_adr <= ctrl_lsu_adr_i;
+		        if (ctrl_op_lsu_load_i) begin
+			          dbus_req_o <= 1;
+			          dbus_bsel_o <= dbus_bsel;
+			          state <= READ;
+		        end
+      		end
+    	end else
+	    if (dc_refill_req) begin
+		      dbus_req_o <= 1;
+		      dbus_adr <= dc_adr_match;
+		      state <= DC_REFILL;
+	    end
 	end
 
 	DC_REFILL: begin
@@ -449,8 +477,8 @@ module mor1kx_lsu_cappuccino
 	   if (dbus_ack_i) begin
 	      dbus_adr <= next_dbus_adr;
 	      if (dc_refill_done) begin
-		 dbus_req_o <= 0;
-		 state <= IDLE;
+			 dbus_req_o <= 0;
+			 state <= IDLE;
 	      end
 	   end
 
@@ -489,8 +517,8 @@ module mor1kx_lsu_cappuccino
 	      dbus_req_o <= 0;
 	      dbus_we <= 0;
 	      if (!store_buffer_write) begin
-		 state <= IDLE;
-		 write_done <= 1;
+			 state <= IDLE;
+			 write_done <= 1;
 	      end
 	   end
 	end
@@ -509,6 +537,57 @@ module mor1kx_lsu_cappuccino
 	   if (dbus_ack_i | tlb_reload_ack)
 	     dbus_req_o <= 0;
 	end
+
+	SNOOP_MANAGEMENT: begin
+
+		//
+		//	We have two cases:
+		// 		- the data is not present, thus we simply answer to the 
+		//			coherence module and then return to IDLE;
+		//		- the data is present, thus we have to write it on the bus
+		//	In both the cases we have to write on the bus
+		//
+		dbus_req_o <= 1;
+		dbus_we <= 1;
+
+		if (!snoop_address_conflict & !dc_snoop_hit) begin
+			// Let the default values for many bus signals
+			// The address is set to the snoop address. It may be useful
+			dbus_adr <= snoop_adr_i;
+			// Write down the answers
+			snoop_response_ack <= 1;
+			snoop_response_hit <= 0;
+			//
+			last_write <= 1;
+
+		end else begin
+			// Writing operations as in the WRITE state
+			// In addition we check that the dcache has retrieved the data, or
+			// if there was a conflict we do not have to check it
+			if ((snoop_address_conflict | dc_snoop_valid_dat) 
+				& (!dbus_req_o | dbus_ack_i & !last_write)) begin
+			      dbus_adr <= snoop_adr_i;
+			      dbus_dat <= snoop_address_conflict ? snoop_dat : dc_snoop_dat;
+			      dbus_atomic <= store_buffer_atomic; // Unchanged
+			      // Set to 1 the flag last write since we do not have to check
+			      // when the data has been removed from the Store Buffer.
+			      last_write <= 1;
+	   		end
+		end
+
+		// Check for the end of the writing operations
+		if (last_write & dbus_ack_i | dbus_err_i) begin
+	      dbus_req_o <= 0;
+	      dbus_we <= 0;
+	      // Unlock the dcache
+	      dc_snoop_ack <= 1;
+	      // Return to IDLE state
+		  state <= IDLE;
+		  write_done <= 1;
+	      end
+	   end
+
+	//end
 
 	default:
 	  state <= IDLE;
@@ -578,17 +657,17 @@ end else begin
 end
 endgenerate
 
-   // Store buffer logic
-   always @(posedge clk)
-     if (rst)
-       store_buffer_write_pending <= 0;
-     else if (store_buffer_write | pipeline_flush_i)
-       store_buffer_write_pending <= 0;
-     else if (ctrl_op_lsu_store_i & padv_ctrl_i & !dbus_stall &
+// Store buffer logic
+always @(posedge clk)
+   	if (rst)
+     	store_buffer_write_pending <= 0;
+	else if (store_buffer_write | pipeline_flush_i)
+    	store_buffer_write_pending <= 0;
+    else if (ctrl_op_lsu_store_i & padv_ctrl_i & !dbus_stall &
 	      (store_buffer_full | dc_refill | dc_refill_r | dc_snoop_hit))
-       store_buffer_write_pending <= 1;
+    	store_buffer_write_pending <= 1;
 
-   assign store_buffer_write = (ctrl_op_lsu_store_i &
+    assign store_buffer_write = (ctrl_op_lsu_store_i &
 				(padv_ctrl_i | tlb_reload_done) |
 				store_buffer_write_pending) &
 			       !store_buffer_full & !dc_refill & !dc_refill_r &
@@ -649,6 +728,8 @@ end else begin
 end
 endgenerate
    assign store_buffer_wadr = dc_adr_match;
+
+   // Data cache logic
 
    always @(posedge clk `OR_ASYNC_RST)
      if (rst)
@@ -741,6 +822,8 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
 	    .cpu_ack_o			(dc_ack),		 // Templated
 	    .cpu_dat_o			(dc_ldat),		 // Templated
 	    .snoop_hit_o		(dc_snoop_hit),		 // Templated
+	    .snoop_dat_o		(dc_snoop_dat_wire),
+	    .snoop_valid_dat_o	(dc_snoop_valid_dat),
 	    .spr_bus_dat_o		(spr_bus_dat_dc_o),	 // Templated
 	    .spr_bus_ack_o		(spr_bus_ack_dc_o),	 // Templated
 	    // Inputs
@@ -761,6 +844,7 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
 	    .we_i			(dbus_ack_i),		 // Templated
 	    .snoop_adr_i		(snoop_adr_i[31:0]),
 	    .snoop_valid_i		(snoop_valid),		 // Templated
+	    .snoop_ack_i		(dc_snoop_ack),
 	    .spr_bus_addr_i		(spr_bus_addr_i[15:0]),
 	    .spr_bus_we_i		(spr_bus_we_i),
 	    .spr_bus_stb_i		(spr_bus_stb_i),
@@ -778,6 +862,51 @@ end else begin
 end
 
 endgenerate
+
+// Snoop request arrival's logic
+always @(posedge snoop_req_i) begin : check_snoop_conflict_
+	//
+	// Here a snoop request has still been raised, thus we have to check for
+	// eventual conflicts:
+	// 		- first, the address in which we are writing (thus the data coming
+	// 	out from the store buffer) is the same of the snoop request.
+	//		- second, the address of the data we are saving into the store 
+	//  buffer is the same of the snoop request.
+	//
+	//	Note that if we do not have a store buffer, only the first check makes
+	//  sense, since the data to be stored are directly written on the bus.
+	//
+	if(state == WRITE && snoop_adr_i == dbus_adr) begin
+		// We are writing the requested data on the bus, thus we have already 
+		// the snooped data for handling the request in the FSM.
+		snoop_address_conflict <= 1;
+		snoop_dat <= dbus_dat;
+	end else
+	if (FEATURE_STORE_BUFFER != "NONE" && snoop_adr_i == store_buffer_wadr) begin
+		// We are writing the requested data into the store buffer, thus we
+		// have already the snooped data.
+		// WARNING: This kind of checks are formally correct ONLY under the
+		// current implementation of a write-trought cache, i.e., the store
+		// buffer will have at most one item.
+		snoop_address_conflict <= 1;
+		// The data we are storing into the store buffer is into the wire lsu_sdat
+		snoop_dat <= lsu_sdat;
+	end
+end
+
+// End of Snoop request's logic
+always @(negedge snoop_req_i) begin : reset_snoop_signals_
+	// Reset the outputs
+	snoop_response_ack <= 0;
+	snoop_response_hit <= 0;
+	//
+	snoop_address_conflict <= 0;
+	// TODO : How to reset correctly the snoop_dat signal?
+	snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+end
+
+
+// DMMU logic
 
 generate
 if (FEATURE_DMMU!="NONE") begin : dmmu_gen
