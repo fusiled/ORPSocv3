@@ -20,7 +20,7 @@
 
 module mor1kx_lsu_cappuccino
   #(
-    parameter FEATURE_DATACACHE	= "NONE",
+    parameter FEATURE_DATACACHE	= "YES",
     parameter OPTION_OPERAND_WIDTH = 32,
     parameter OPTION_DCACHE_BLOCK_WIDTH = 5,
     parameter OPTION_DCACHE_SET_WIDTH = 9,
@@ -582,12 +582,17 @@ module mor1kx_lsu_cappuccino
 	      // Unlock the dcache
 	      dc_snoop_ack <= 1;
 	      // Return to IDLE state
-		  state <= IDLE;
-		  write_done <= 1;
-	      end
-	   end
-
-	//end
+		    state <= IDLE;
+		    write_done <= 1;
+        // Reset the outputs
+        snoop_response_ack <= 0;
+        snoop_response_hit <= 0;
+        //
+        //snoop_address_conflict <= 0;
+        // TODO : How to reset correctly the snoop_dat signal?
+        //snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+	  end
+	end
 
 	default:
 	  state <= IDLE;
@@ -864,7 +869,12 @@ end
 endgenerate
 
 // Snoop request arrival's logic
-always @(posedge snoop_req_i) begin : check_snoop_conflict_
+always @(snoop_req_i) begin : check_snoop_conflict_
+  // The checks having snoop_req_i into the condition refer to the positive
+  // edge of the signal, whereas the ones related to negative edge have into
+  // the condition !snoop_req_i
+  //
+  //
 	//
 	// Here a snoop request has still been raised, thus we have to check for
 	// eventual conflicts:
@@ -876,13 +886,13 @@ always @(posedge snoop_req_i) begin : check_snoop_conflict_
 	//	Note that if we do not have a store buffer, only the first check makes
 	//  sense, since the data to be stored are directly written on the bus.
 	//
-	if(state == WRITE && snoop_adr_i == dbus_adr) begin
+	if(snoop_req_i && state == WRITE && snoop_adr_i == dbus_adr) begin
 		// We are writing the requested data on the bus, thus we have already 
 		// the snooped data for handling the request in the FSM.
 		snoop_address_conflict <= 1;
 		snoop_dat <= dbus_dat;
 	end else
-	if (FEATURE_STORE_BUFFER != "NONE" && snoop_adr_i == store_buffer_wadr) begin
+	if (FEATURE_STORE_BUFFER != "NONE" && snoop_req_i && snoop_adr_i == store_buffer_wadr) begin
 		// We are writing the requested data into the store buffer, thus we
 		// have already the snooped data.
 		// WARNING: This kind of checks are formally correct ONLY under the
@@ -891,18 +901,14 @@ always @(posedge snoop_req_i) begin : check_snoop_conflict_
 		snoop_address_conflict <= 1;
 		// The data we are storing into the store buffer is into the wire lsu_sdat
 		snoop_dat <= lsu_sdat;
-	end
-end
+	end else begin
+    snoop_address_conflict <= 0;
+  end
 
-// End of Snoop request's logic
-always @(negedge snoop_req_i) begin : reset_snoop_signals_
-	// Reset the outputs
-	snoop_response_ack <= 0;
-	snoop_response_hit <= 0;
-	//
-	snoop_address_conflict <= 0;
-	// TODO : How to reset correctly the snoop_dat signal?
-	snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+  if (!snoop_req_i) begin
+    // At the negative edge I reset the snoop_dat register
+      snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+  end
 end
 
 

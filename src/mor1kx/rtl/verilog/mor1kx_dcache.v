@@ -484,7 +484,7 @@ module mor1kx_dcache
      WRITE: begin
         if ((!dc_access_i | !cpu_req_i | !cpu_we_i | write_aborted) & !snoop_hit) begin
             write_pending <= 0;
-              write_aborted <= 0;
+            //write_aborted <= 0; moved in the other fsm.
             state <= READ;
         end else if (snoop_hit & (!write_pending | write_aborted)) begin
             // When we have a snoop_hit during a cache write we wait for the end of the write
@@ -508,16 +508,12 @@ module mor1kx_dcache
      SNOOPHIT: begin
         // We immediately go in a special case, needed to count the clock cycles used to
         // retrieved the snooped data
-        snoop_counter <= 0;
         state <= SNOOPHIT_COUNTER;
      end
 
      SNOOPHIT_COUNTER: begin
-        snoop_counter <= snoop_counter + 1;
-        // After one clock cycle in which we are in this state the snooped data has been retrieved
-        if (snoop_counter >= 1) begin
-          snoop_valid_dat <= 1'b1;
-        end
+        // After one clock cycle in which we are in the snoop states, the snooped data has been retrieved
+        snoop_valid_dat <= 1'b1;
         // Then we only wait for the end of the snooping operations, through an input signal
         if (snoop_ack_i) begin
           state <= IDLE;
@@ -605,6 +601,10 @@ module mor1kx_dcache
      end
 
      WRITE: begin
+        //PASTED from syn FSM. Check if this is correct
+        if ((!dc_access_i | !cpu_req_i | !cpu_we_i | write_aborted) & !snoop_hit) begin
+          write_aborted = 0;
+        end
         way_wr_dat = cpu_dat_i;
         // To be sure that we do not enter in this condition twice in the same clock cycle when the write has been aborted
         // we add the condition !write_aborted in bitwise and at the if. 
