@@ -176,9 +176,13 @@ module mor1kx
     input [OPTION_OPERAND_WIDTH-1:0]  multicore_coreid_i,
     // The number of cores
     input [OPTION_OPERAND_WIDTH-1:0]  multicore_numcores_i,
-
+    //snoop interface
     input [31:0] 		     snoop_adr_i,
-    input 			     snoop_en_i
+    input 			     	 snoop_en_i,
+    input  				     snoop_req_i,
+    output 					 snoop_ack_o,
+    output 					 snoop_hit_o,
+    output[OPTION_OPERAND_WIDTH-1:0] snoop_dat_o
     );
 
    /*AUTOWIRE*/
@@ -574,6 +578,11 @@ module mor1kx
       .multicore_coreid_i		(multicore_coreid_i[OPTION_OPERAND_WIDTH-1:0]),
       .multicore_numcores_i		(multicore_numcores_i[OPTION_OPERAND_WIDTH-1:0]),
       .snoop_adr_i			(snoop_adr_i[31:0]),
-      .snoop_en_i			(snoop_en_i));
+      .snoop_en_i			(snoop_en_i),
+      .snoop_req_i			(snoop_req_i),
+      .snoop_ack_o 			(snoop_ack_o),
+      .snoop_hit_o			(snoop_hit_o),
+      .snoop_dat_o			(snoop_dat_o)
+      );
 
 endmodule // mor1kx

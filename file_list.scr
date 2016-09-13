@@ -93,4 +93,8 @@
 ../src/mor1kx-generic/rtl/verilog/wb_intercon_multi.v
 ../src/mor1kx-generic/rtl/verilog/orpsoc_multi_top.v
 
+../src/mor1kx-generic/rtl/verilog/orpsoc_multi_coherent_top.v
+../src/mor1kx-generic/rtl/verilog/wb_intercon_multi_coherent.v
+../src/mor1kx-generic/bench/verilog/orpsoc_coherent_tb.v
+../src/wb_intercon-1.0/rtl/verilog/wb_snoop_arbiter.v
 

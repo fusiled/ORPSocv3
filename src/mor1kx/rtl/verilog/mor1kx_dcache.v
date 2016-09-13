@@ -51,21 +51,22 @@ module mor1kx_dcache
     input [OPTION_OPERAND_WIDTH-1:0]  wrdat_i,
     input             we_i,
 
+    //SNOOP INTERFACE
     // Snoop address
     input [31:0]          snoop_adr_i,
     // Snoop event in this cycle
     input             snoop_valid_i,
     // Whether the snoop hit. If so, there will be no tag memory write
     // this cycle. The LSU may need to stall the pipeline.
-    output            snoop_hit_o,
-    output [31:0]     snoop_dat_o,
+    output          snoop_hit_o,
+    output [31:0]   snoop_dat_o,
     output          snoop_valid_dat_o,
     //tells to dcache that outside has received the snooped datum. This should signal a state migration
     //from SNOOPHIT to IDLE. master must deassert this signal.
     input           snoop_ack_i,
 
     // SPR interface
-    input [15:0]          spr_bus_addr_i,
+    input [15:0]      spr_bus_addr_i,
     input             spr_bus_we_i,
     input             spr_bus_stb_i,
     input [OPTION_OPERAND_WIDTH-1:0]  spr_bus_dat_i,

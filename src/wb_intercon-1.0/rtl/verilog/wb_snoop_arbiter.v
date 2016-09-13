@@ -5,24 +5,25 @@
 module wb_snoop_arbiter
  #(parameter dw = 32,
    parameter aw = 32,
-   parameter num_cores = 2)
+   parameter num_masters = 2,
+   parameter num_dbus = 1)
   (
    input 		       wb_clk_i,
    input 		       wb_rst_i,
 
    // Wishbone Master Interface
-   input [num_cores*aw-1:0]  wbm_adr_i,
-   input [num_cores*dw-1:0]  wbm_dat_i,
-   input [num_cores*4-1:0]   wbm_sel_i,
-   input [num_cores-1:0]     wbm_we_i,
-   input [num_cores-1:0]     wbm_cyc_i,
-   input [num_cores-1:0]     wbm_stb_i,
-   input [num_cores*3-1:0]   wbm_cti_i,
-   input [num_cores*2-1:0]   wbm_bte_i,
-   output [num_cores*dw-1:0] wbm_dat_o,
-   output [num_cores-1:0]    wbm_ack_o,
-   output [num_cores-1:0]    wbm_err_o,
-   output [num_cores-1:0]    wbm_rty_o, 
+   input [num_masters*aw-1:0]  wbm_adr_i,
+   input [num_masters*dw-1:0]  wbm_dat_i,
+   input [num_masters*4-1:0]   wbm_sel_i,
+   input [num_masters-1:0]     wbm_we_i,
+   input [num_masters-1:0]     wbm_cyc_i,
+   input [num_masters-1:0]     wbm_stb_i,
+   input [num_masters*3-1:0]   wbm_cti_i,
+   input [num_masters*2-1:0]   wbm_bte_i,
+   output [num_masters*dw-1:0] wbm_dat_o,
+   output [num_masters-1:0]    wbm_ack_o,
+   output [num_masters-1:0]    wbm_err_o,
+   output [num_masters-1:0]    wbm_rty_o, 
 
    // Wishbone Slave interface
    output [aw-1:0] 	       wbs_adr_o,
@@ -40,11 +41,11 @@ module wb_snoop_arbiter
 
 
    //snoop interface
-   output [num_cores*aw-1:0] snoop_adr_o,
+   output [num_dbus*aw-1:0] snoop_adr_o,
    output snoop_type_o,
-   input [num_cores-1:0] snoop_ack_i,
-   input [num_cores-1:0] snoop_valid_dat_i,
-   input [num_cores*dw-1:0] snooped_dat_i
+   input [num_dbus-1:0] snoop_ack_i,
+   input [num_dbus-1:0] snoop_hit_i,
+   input [num_dbus*dw-1:0] snoop_dat_i
    );
 
    `include "verilog_utils.vh"
@@ -56,16 +57,16 @@ module wb_snoop_arbiter
 
    reg [dw-1:0] snooped_dat;
    
-   localparam master_sel_bits = num_cores > 1 ? clog2(num_cores) : 1;
-   wire [num_cores-1:0]     grant;
+   localparam master_sel_bits = num_masters > 1 ? clog2(num_masters) : 1;
+   wire [num_masters-1:0]     grant;
    wire [master_sel_bits-1:0] master_sel;
    wire active;
 
    reg [1:0] poll_response_flag;
 
-   reg [num_cores-1:0] arbiter_cyc;
+   reg [num_masters-1:0] arbiter_cyc;
    reg [aw-1:0] snoop_adr_reg;
-   reg [num_cores-1:0] saved_request;
+   reg [num_masters-1:0] saved_request;
    reg mem_access_active;
    
    reg [3:0] state;
@@ -83,8 +84,8 @@ module wb_snoop_arbiter
    localparam POLL_RESPONSE_NEGATIVE = 2'b00;
    
    
-   reg [num_cores-1:0] poll_result;
-   reg [num_cores-1:0]snoop_datum_owner;
+   reg [num_dbus-1:0] poll_result;
+   reg [num_dbus-1:0]snoop_datum_owner;
    reg [master_sel_bits-1:0] saved_master_sel;
    reg snoop_read_ready;
    wire end_of_transaction;
@@ -93,7 +94,7 @@ module wb_snoop_arbiter
 
    
    arbiter
-     #(.NUM_PORTS (num_cores))
+     #(.NUM_PORTS (num_masters))
    arbiter0
      (.clk (wb_clk_i),
       .rst (wb_rst_i),
@@ -115,8 +116,8 @@ module wb_snoop_arbiter
    assign wbs_bte_o = wbm_bte_i[master_sel*2+:2];
 
    assign wbm_dat_o = poll_response_flag == POLL_RESPONSE_POSITIVE ?
-                           {num_cores{snooped_dat}} :
-                           {num_cores{wbs_dat_i}};
+                           {num_dbus{snooped_dat}} :
+                           {num_dbus{wbs_dat_i}};
 
    assign wbm_ack_o = poll_response_flag == POLL_RESPONSE_POSITIVE ? 
                           1 << saved_master_sel :
@@ -132,7 +133,7 @@ module wb_snoop_arbiter
                                  (state == MEM_ACCESS && wbm_cyc_i[master_sel]==0) ) ? 1 : 0;
 
 
-   assign snoop_adr_o = {num_cores{snoop_adr_reg}};
+   assign snoop_adr_o = {num_dbus{snoop_adr_reg}};
 
 
    always@(posedge wb_clk_i)
@@ -147,7 +148,7 @@ module wb_snoop_arbiter
          IDLE:
          begin
             next_state = IDLE;
-            if(active && wbm_we_i[master_sel]==0)
+            if(active && wbm_we_i[master_sel]==0 && master_sel < num_dbus)
             begin
                next_state = SNOOP_READ;
             end
@@ -219,6 +220,7 @@ module wb_snoop_arbiter
       endcase
    end
 
+//handle poll_response_flag (and so snoop operations)
    always@(*)
    begin
       snooped_dat=0;
@@ -226,18 +228,18 @@ module wb_snoop_arbiter
       begin: snoop_read_active
          integer k;
          poll_response_flag = POLL_RESPONSE_UNDEFINED;
-         for(k=0; k<num_cores; k = k+1)
+         for(k=0; k<num_dbus; k = k+1)
          begin
             if(snoop_ack_i[k]==1)
             begin
-               if(snoop_valid_dat_i[k]==1)
+               if(snoop_hit_i[k]==1)
                begin
                   poll_response_flag = POLL_RESPONSE_POSITIVE;
-                  snooped_dat = snooped_dat_i[dw*k+:dw];
+                  snooped_dat = snoop_dat_i[dw*k+:dw];
                end
             end
          end
-         if(snoop_ack_i == {num_cores{1'b1}} && snoop_valid_dat_i==0 && poll_response_flag == POLL_RESPONSE_UNDEFINED)
+         if(snoop_ack_i == {num_dbus{1'b1}} && snoop_hit_i==0 && poll_response_flag == POLL_RESPONSE_UNDEFINED)
          begin
             poll_response_flag = POLL_RESPONSE_NEGATIVE;
          end

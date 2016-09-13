@@ -108,10 +108,10 @@ module mor1kx_lsu_cappuccino
     input             dbus_ack_i,
     input [OPTION_OPERAND_WIDTH-1:0]  dbus_dat_i,
     input             pipeline_flush_i,
-
+    //snoop interface
     output          snoop_response_ack_o, // When the response is available
     output          snoop_response_hit_o, // Snoop request's response.
-    output [OPTION_OPERAND_WIDTH-1:0]         snoop_response_dat_o, // The eventual data
+    output reg[OPTION_OPERAND_WIDTH-1:0]         snoop_response_dat_o, // The eventual data
     input           snoop_req_i,
     input [OPTION_OPERAND_WIDTH-1:0]          snoop_adr_i,
     input             snoop_en_i
@@ -827,7 +827,7 @@ if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
       .wradr_i      (dbus_adr),    // Templated
       .wrdat_i      (dbus_dat_i),    // Templated
       .we_i     (dbus_ack_i),    // Templated
-      .snoop_adr_i    (snoop_adr_i[31:0]),
+      .snoop_adr_i    (snoop_adr_i),
       .snoop_valid_i    (snoop_valid),     // Templated
       .snoop_ack_i    (dc_snoop_ack),
       .spr_bus_addr_i   (spr_bus_addr_i[15:0]),

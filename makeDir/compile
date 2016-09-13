@@ -15,7 +15,7 @@ iverilog-vpi --name=elf-loader -lelf -I$ABSPATH/src/elf-loader $ROOT_DIR/src/elf
 
 iverilog-vpi --name=jtag_vpi-r2 $ROOT_DIR/src/jtag_vpi-r2/jtag_vpi.c
 
-iverilog -s orpsoc_tb -c $ROOT_DIR/file_list.scr -o fusesoc.elf -DSIM
+iverilog -s orpsoc_coherent_tb -c $ROOT_DIR/file_list.scr -o fusesoc.elf -DSIM
 
 if [ -z $2 ]; then
 	ELF_PATH=$ROOT_DIR/def/test.out
