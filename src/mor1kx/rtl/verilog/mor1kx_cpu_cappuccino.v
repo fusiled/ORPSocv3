@@ -378,11 +378,6 @@ module mor1kx_cpu_cappuccino
    wire                 wb_rf_wb_o;             // From mor1kx_execute_ctrl_cappuccino of mor1kx_execute_ctrl_cappuccino.v
    wire [OPTION_RF_ADDR_WIDTH-1:0] wb_rfd_adr_o;// From mor1kx_execute_ctrl_cappuccino of mor1kx_execute_ctrl_cappuccino.v
    // End of automatics
-   //NEW SNOOP INTERFACE
-   wire lsu_snoop_req_i;
-   wire lsu_snoop_response_hit_o;
-   wire lsu_snoop_response_ack_o;
-   wire [OPTION_OPERAND_WIDTH-1:0] lsu_snoop_response_dat_o;
 
    /* mor1kx_fetch_cappuccino AUTO_TEMPLATE (
     .padv_i				(padv_fetch_o),
@@ -1009,10 +1004,10 @@ module mor1kx_cpu_cappuccino
       .pipeline_flush_i                 (pipeline_flush_o),      // Templated
       .snoop_adr_i                      (snoop_adr_i[31:0]),
       .snoop_en_i                       (snoop_en_i),
-      .snoop_req_i                      (lsu_snoop_req_i),
-      .snoop_response_hit_o             (lsu_snoop_response_hit_o),
-      .snoop_response_ack_o             (lsu_snoop_response_ack_o),
-      .snoop_response_dat_o             (lsu_snoop_response_dat_o)
+      .snoop_req_i                      (snoop_req_i),
+      .snoop_response_hit_o             (snoop_hit_o),
+      .snoop_response_ack_o             (snoop_ack_o),
+      .snoop_response_dat_o             (snoop_dat_o)
       );
 
 

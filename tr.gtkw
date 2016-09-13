@@ -1,0 +1,40 @@
+[*]
+[*] GTKWave Analyzer v3.3.72 (w)1999-2016 BSI
+[*] Tue Sep 13 13:00:45 2016
+[*]
+[dumpfile] "/home/fusiled/Desktop/orpsocV3/build/trace.vcd"
+[dumpfile_mtime] "Tue Sep 13 12:38:49 2016"
+[dumpfile_size] 2732482
+[savefile] "/home/fusiled/Desktop/orpsocV3/tr.gtkw"
+[timestart] 83
+[size] 1366 742
+[pos] -1 -1
+*-3.000000 110 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] orpsoc_coherent_tb.
+[treeopen] orpsoc_coherent_tb.dut.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.
+[treeopen] orpsoc_coherent_tb.gen_monitor[0].i_monitor.
+[treeopen] orpsoc_coherent_tb.gen_monitor[1].
+[sst_width] 244
+[signals_width] 149
+[sst_expanded] 1
+[sst_vpaned_height] 208
+@28
+orpsoc_coherent_tb.dut.wb_clk[0]
+orpsoc_coherent_tb.dut.wb_rst[0]
+@820
+orpsoc_coherent_tb.gen_monitor[0].i_monitor.mor1k_insn_to_string.insnstring[640:1]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_fetch_cappuccino.pc_addr[31:0]
+@29
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.arbiter_cyc[4:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbs_dat_i[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

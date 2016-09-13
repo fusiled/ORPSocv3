@@ -43,7 +43,7 @@ module orpsoc_coherent_tb;
    reg syst_rst = 1;
 
    always #1 syst_clk <= ~syst_clk;
-   
+
 
    initial 
    begin
@@ -82,7 +82,7 @@ module orpsoc_coherent_tb;
 
 
   orpsoc_multi_coherent_top
-   #(.NUM_CORES (2),
+   #(.NUM_CORES (4),
     .MEM_PER_CORE(1000))
    dut
      (.wb_clk_i (syst_clk),

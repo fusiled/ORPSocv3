@@ -1,6 +1,6 @@
 
 module orpsoc_multi_coherent_top
-#(parameter NUM_CORES=1,
+#(parameter NUM_CORES=2,
   parameter MEM_PER_CORE=32'h1000)
 (
 		input wb_clk_i,
@@ -233,8 +233,8 @@ for (i=0; i<NUM_CORES; i=i+1) begin: gen_cores
 	.IBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.DBUS_WB_TYPE			("B3_REGISTERED_FEEDBACK"),
 	.OPTION_CPU0			("CAPPUCCINO"),
-	//.OPTION_RESET_PC		(32'h00000100),
-	.OPTION_RESET_PC		(32'h00000100+i*MEM_PER_CORE),
+	.OPTION_RESET_PC		(32'h00000100),
+	//.OPTION_RESET_PC		(32'h00000100+i*MEM_PER_CORE),
 	.FEATURE_MULTICORE		(MULTICORE)
 	) mor1kx0 (
 	.iwbm_adr_o			(wb_m2s_or1k_i_adr[32*(i+1)-1:(32*i)]),
@@ -449,7 +449,12 @@ wb_intercon_multi_coherent
     .wb_uart_dat_i   (wb_s2m_uart_dat),
     .wb_uart_ack_i   (wb_s2m_uart_ack),
     .wb_uart_err_i   (wb_s2m_uart_err),
-    .wb_uart_rty_i   (wb_s2m_uart_rty)
+    .wb_uart_rty_i   (wb_s2m_uart_rty),
+    .bus_snoop_adr_o (bus_snoop_adr),
+    .bus_snoop_req_o (bus_snoop_req),
+    .bus_snoop_ack_i (bus_snoop_ack),
+    .bus_snoop_hit_i (bus_snoop_hit),
+    .bus_snoop_dat_i (bus_snoop_dat)
    );
 
 

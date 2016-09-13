@@ -38,7 +38,7 @@ module wb_upsizer
    localparam DW_OUT = DW_IN*SCALE;
    localparam SW_OUT = SELW*SCALE;
    
-   localparam BUFW = $clog2(DW_IN/8)-1; //Buffer width
+   localparam BUFW = clog2(DW_IN/8)-1; //Buffer width
    
    localparam ADR_LSB = BUFW+1; //Bit position of the LSB of the buffer address. Lower bits are used for index part
    
