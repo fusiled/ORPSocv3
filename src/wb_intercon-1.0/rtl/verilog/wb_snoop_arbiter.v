@@ -148,8 +148,9 @@ module wb_snoop_arbiter
          IDLE:
          begin
             next_state = IDLE;
-            if(active && wbm_we_i[master_sel]==0 && master_sel < num_dbus)
+            if(active==1 && wbm_we_i[master_sel]==0 && wbm_cyc_i[master_sel]==1 && master_sel < num_dbus)
             begin
+               $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, num_dbus:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, num_dbus, wbm_cyc_i);
                next_state = SNOOP_READ;
             end
          end
