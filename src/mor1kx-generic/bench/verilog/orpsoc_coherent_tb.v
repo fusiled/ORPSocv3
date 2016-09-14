@@ -82,7 +82,7 @@ module orpsoc_coherent_tb;
 
 
   orpsoc_multi_coherent_top
-   #(.NUM_CORES (4),
+   #(.NUM_CORES (NUM_CORES),
     .MEM_PER_CORE(1000))
    dut
      (.wb_clk_i (syst_clk),

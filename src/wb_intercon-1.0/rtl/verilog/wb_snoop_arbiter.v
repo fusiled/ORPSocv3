@@ -116,8 +116,8 @@ module wb_snoop_arbiter
    assign wbs_bte_o = wbm_bte_i[master_sel*2+:2];
 
    assign wbm_dat_o = poll_response_flag == POLL_RESPONSE_POSITIVE ?
-                           {num_dbus{snooped_dat}} :
-                           {num_dbus{wbs_dat_i}};
+                           {num_masters{snooped_dat}} :
+                           {num_masters{wbs_dat_i}};
 
    assign wbm_ack_o = poll_response_flag == POLL_RESPONSE_POSITIVE ? 
                           1 << saved_master_sel :
