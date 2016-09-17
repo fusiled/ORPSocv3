@@ -1,0 +1,209 @@
+[*]
+[*] GTKWave Analyzer v3.3.72 (w)1999-2016 BSI
+[*] Thu Sep 15 10:28:48 2016
+[*]
+[dumpfile] "/home/fusiled/Desktop/orpsocV3/build/trace.vcd"
+[dumpfile_mtime] "Thu Sep 15 10:23:18 2016"
+[dumpfile_size] 6417384
+[savefile] "/home/fusiled/Desktop/orpsocV3/tr.gtkw"
+[timestart] 21141
+[size] 1366 742
+[pos] -1 -1
+*-6.000000 21238 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] orpsoc_coherent_tb.
+[treeopen] orpsoc_coherent_tb.dut.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.
+[treeopen] orpsoc_coherent_tb.gen_monitor[0].i_monitor.
+[treeopen] orpsoc_coherent_tb.gen_monitor[1].i_monitor.
+[sst_width] 244
+[signals_width] 423
+[sst_expanded] 1
+[sst_vpaned_height] 478
+@28
+orpsoc_coherent_tb.dut.wb_clk[0]
+orpsoc_coherent_tb.dut.wb_rst[0]
+@800200
+-core0
+@820
+orpsoc_coherent_tb.gen_monitor[0].i_monitor.mor1k_insn_to_string.insnstring[640:1]
+@c00200
+-dbus
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_ack_i[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_adr_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_bsel_o[3:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_burst_o[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_dat_i[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_dat_o[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_err_i[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_req_o[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_we_o[0]
+@1401200
+-dbus
+@c00200
+-snoop_lsu
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_adr_i[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_req_i[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_ack_o[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_hit_o[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_dat_o[31:0]
+@24
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.state[2:0]
+@1401200
+-snoop_lsu
+@25
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.state[2:0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_adr_i[31:0]
+@800200
+-dcache
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.state[6:0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_index[7:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_valid_i[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_tag[17:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_hit_o[0]
+@1000200
+-dcache
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_dat_o[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_valid_dat_o[0]
+@1000200
+-core0
+@c00200
+-core1
+@820
+orpsoc_coherent_tb.gen_monitor[1].i_monitor.mor1k_insn_to_string.insnstring[640:1]
+@c00200
+-dbus
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_ack_i[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_adr_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_bsel_o[3:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_burst_o[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_dat_i[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_dat_o[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_err_i[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_req_o[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.dbus_we_o[0]
+@1401200
+-dbus
+@c00200
+-snoop_lsu
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_adr_i[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_req_i[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_ack_o[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_hit_o[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_response_dat_o[31:0]
+@24
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.state[2:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_snoop_hit[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.snoop_address_conflict[0]
+@1401200
+-snoop_lsu
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.state[6:0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_adr_i[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_hit_o[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_refill[0]
+@800200
+-dcache
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_adr_i[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_valid_i[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_tag[17:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_hit_o[0]
+@1000200
+-dcache
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_dat_o[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.snoop_valid_dat_o[0]
+@1401200
+-core1
+@800200
+-wb_snooop_arbiter
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.end_of_transaction[0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.active[0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.arbiter_cyc[4:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_dat_o[159:0]
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_ack_o[4:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_adr_i[159:0]
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_bte_i[9:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_cti_i[14:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_dat_i[159:0]
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_stb_i[4:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_cyc_i[4:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbm_we_i[4:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.next_state[3:0]
+@c00028
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+@28
+(0)orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+(1)orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+(2)orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+(3)orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.state[3:0]
+@1401200
+-group_end
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_ack_i[1:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_hit_i[1:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_adr_o[63:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_dat_i[63:0]
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_type_o[0]
+@24
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.master_sel[2:0]
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.saved_master_sel[2:0]
+@1000200
+-wb_snooop_arbiter
+@800200
+-memory
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.wbs_dat_i[31:0]
+@1000200
+-memory
+[pattern_trace] 1
+[pattern_trace] 0

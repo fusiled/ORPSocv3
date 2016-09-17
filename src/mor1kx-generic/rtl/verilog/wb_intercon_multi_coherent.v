@@ -31,7 +31,7 @@ module wb_intercon_multi_coherent
     output [NUM_CORES-1:0]       wb_or1k_i_rty_o,
     //snoop interface
     output [DATA_WIDTH*NUM_CORES-1:0] bus_snoop_adr_o,
-    output                     bus_snoop_req_o,
+    output[NUM_CORES-1:0]      bus_snoop_req_o,
     input [NUM_CORES-1:0]      bus_snoop_ack_i,
     input [NUM_CORES-1:0]      bus_snoop_hit_i,
     input [DATA_WIDTH*NUM_CORES-1:0]   bus_snoop_dat_i,

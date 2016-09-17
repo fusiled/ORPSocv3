@@ -1,5 +1,5 @@
 
-module orpsoc_multi_coherent_top
+module orpsoc_multi_coherent_fake_top
 #(parameter NUM_CORES=2,
   parameter MEM_PER_CORE=32'h1000)
 (
@@ -386,30 +386,30 @@ assign or1k_irq[30] = 0;
 
 
 wb_intercon_multi_coherent
-	#(.NUM_CORES (NUM_CORES))
+	#(.NUM_CORES (NUM_CORES+1))
  wb_intercon0
    (.wb_clk_i        (wb_clk),
     .wb_rst_i        (wb_rst),
-    .wb_or1k_d_adr_i (wb_m2s_or1k_d_adr),
-    .wb_or1k_d_dat_i (wb_m2s_or1k_d_dat),
-    .wb_or1k_d_sel_i (wb_m2s_or1k_d_sel),
-    .wb_or1k_d_we_i  (wb_m2s_or1k_d_we),
-    .wb_or1k_d_cyc_i (wb_m2s_or1k_d_cyc),
-    .wb_or1k_d_stb_i (wb_m2s_or1k_d_stb),
-    .wb_or1k_d_cti_i (wb_m2s_or1k_d_cti),
-    .wb_or1k_d_bte_i (wb_m2s_or1k_d_bte),
+    .wb_or1k_d_adr_i ({32'b0,wb_m2s_or1k_d_adr}),
+    .wb_or1k_d_dat_i ({32'b0,wb_m2s_or1k_d_dat}),
+    .wb_or1k_d_sel_i ({4'b0,wb_m2s_or1k_d_sel}),
+    .wb_or1k_d_we_i  ({1'b0,wb_m2s_or1k_d_we}),
+    .wb_or1k_d_cyc_i ({1'b0,wb_m2s_or1k_d_cyc}),
+    .wb_or1k_d_stb_i ({1'b0,wb_m2s_or1k_d_stb}),
+    .wb_or1k_d_cti_i ({3'b0,wb_m2s_or1k_d_cti}),
+    .wb_or1k_d_bte_i ({2'b0,wb_m2s_or1k_d_bte}),
     .wb_or1k_d_dat_o (wb_s2m_or1k_d_dat),
     .wb_or1k_d_ack_o (wb_s2m_or1k_d_ack),
     .wb_or1k_d_err_o (wb_s2m_or1k_d_err),
     .wb_or1k_d_rty_o (wb_s2m_or1k_d_rty),
-    .wb_or1k_i_adr_i (wb_m2s_or1k_i_adr),
-    .wb_or1k_i_dat_i (wb_m2s_or1k_i_dat),
-    .wb_or1k_i_sel_i (wb_m2s_or1k_i_sel),
-    .wb_or1k_i_we_i  (wb_m2s_or1k_i_we),
-    .wb_or1k_i_cyc_i (wb_m2s_or1k_i_cyc),
-    .wb_or1k_i_stb_i (wb_m2s_or1k_i_stb),
-    .wb_or1k_i_cti_i (wb_m2s_or1k_i_cti),
-    .wb_or1k_i_bte_i (wb_m2s_or1k_i_bte),
+    .wb_or1k_i_adr_i ({32'b0,wb_m2s_or1k_i_adr}),
+    .wb_or1k_i_dat_i ({32'b0,wb_m2s_or1k_i_dat}),
+    .wb_or1k_i_sel_i ({4'b0,wb_m2s_or1k_i_sel}),
+    .wb_or1k_i_we_i  ({1'b0,wb_m2s_or1k_i_we}),
+    .wb_or1k_i_cyc_i ({1'b0,wb_m2s_or1k_i_cyc}),
+    .wb_or1k_i_stb_i ({1'b0,wb_m2s_or1k_i_stb}),
+    .wb_or1k_i_cti_i ({3'b0,wb_m2s_or1k_i_cti}),
+    .wb_or1k_i_bte_i ({2'b0,wb_m2s_or1k_i_bte}),
     .wb_or1k_i_dat_o (wb_s2m_or1k_i_dat),
     .wb_or1k_i_ack_o (wb_s2m_or1k_i_ack),
     .wb_or1k_i_err_o (wb_s2m_or1k_i_err),
@@ -452,9 +452,9 @@ wb_intercon_multi_coherent
     .wb_uart_rty_i   (wb_s2m_uart_rty),
     .bus_snoop_adr_o (bus_snoop_adr),
     .bus_snoop_req_o (bus_snoop_req),
-    .bus_snoop_ack_i (bus_snoop_ack),
-    .bus_snoop_hit_i (bus_snoop_hit),
-    .bus_snoop_dat_i (bus_snoop_dat)
+    .bus_snoop_ack_i ({1'b1,bus_snoop_ack}),
+    .bus_snoop_hit_i ({1'b0,bus_snoop_hit}),
+    .bus_snoop_dat_i ({32'b0,bus_snoop_dat})
    );
 
 
