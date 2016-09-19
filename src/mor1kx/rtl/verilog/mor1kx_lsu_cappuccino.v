@@ -216,13 +216,13 @@ module mor1kx_lsu_cappuccino
    wire [OPTION_OPERAND_WIDTH-1:0]  dc_snoop_dat_wire;
    reg [OPTION_OPERAND_WIDTH-1:0] snoop_dat;
    reg          snoop_address_conflict;
+   reg 			snoop_on_refill;
 
    reg          snoop_response_hit;
    reg          snoop_response_ack;
 
    // We have to mask out our snooped bus accesses
    assign snoop_valid = (snoop_en_i==1) && (snoop_adr_i != dbus_adr_o);
-   //assign snoop_valid = 1;
 
    assign snoop_response_ack_o = snoop_response_ack;
    assign snoop_response_hit_o = snoop_response_hit;
@@ -424,10 +424,12 @@ module mor1kx_lsu_cappuccino
      dbus_bsel_o <= 4'hf;
      dbus_atomic <= 0;
      last_write <= 0;
+     // Reset snoop wires
      snoop_response_ack <= 0;
      snoop_response_hit <= 0;
+     snoop_on_refill <= 0;
      snoop_address_conflict <= 0;
-      // The first time we reach the idle state we handle the snoop requests, if any.
+      // The first time we reach the idle state we handle the snoop requests, if any
       // Note: to avoid a conflict, we check that the store buffer is empty.
       // This conflict happens when the snoop address is the same of the last data
       // written into the store buffer. In this way we have to wait at most one write
@@ -484,29 +486,19 @@ module mor1kx_lsu_cappuccino
         end
      end
 
-     /*// TODO: only abort on snoop-hits to refill address
-     if (dbus_err_i | dc_snoop_hit | snoop_req_i) begin
+     // TODO: only abort on snoop-hits to refill address
+     // Up to now in case of snoop hit we abort the refill both into the LSU
+     // and into the dcache and go into the snoop management state trough the
+     // idle state.
+     if (dbus_err_i | dc_snoop_hit) begin
         dbus_req_o <= 0;
         state <= IDLE;
-     end*/
-     if ((dbus_adr == snoop_adr_i) & snoop_req_i) begin
-        // In this case we receive a request for a snoop on the data we are
-        // searching for, thus we can answer direclty
-        snoop_response_ack <= 1;
-        snoop_response_hit <= 0;
-    end else if (snoop_req_i) begin
-        // We need to reach the snoop management state to handle the snoop_req
-        dbus_req_o <= 0;
-        state <= IDLE; 
-    end else begin
-        // when the request is deasserted we manually reset the signals
-        snoop_response_ack <= 0;
-        snoop_response_hit <= 0;
-    end
-    if (dbus_err_i) begin
-        dbus_req_o <= 0;
-        state <= IDLE;
-    end
+     end else if (snoop_req_i) begin
+     	// Go into the snoop_management state with a special signal asserted
+     	// In this way we do not block the refill in case of non snoop hits
+     	snoop_on_refill <= 1;
+     	state <= SNOOP_MANAGEMENT;
+     end
   end
 
   READ: begin
@@ -566,28 +558,32 @@ module mor1kx_lsu_cappuccino
     //      coherence module and then return to IDLE;
     //    - the data is present, thus we have to write it on the bus
     //
-    //  Note: the case in which we receive a request on the address of the
-    //  dc refill is handled in the dedicated state directly
-    //
 
-    if (!snoop_address_conflict & !dc_snoop_hit) begin
-      // Write down the answers
-      snoop_response_ack <= 1;
-      snoop_response_hit <= 0;
-      snoop_response_dat_o <= {OPTION_OPERAND_WIDTH{1'b0}};
-    end else begin
-      // Write down that we have had a hit
-      snoop_response_ack <= 1;
-      snoop_response_hit <= 1;
-      snoop_response_dat_o <= snoop_address_conflict ? snoop_dat : dc_snoop_dat_wire;
-    end
+    // Formally, I have to wait until the dcache set the signal dat_valid
+    // Alternatively the dcache does not set the dc_snoop_hit signal
 
+	  if (!snoop_address_conflict & !dc_snoop_hit) begin
+	    // Write down the answers
+	    snoop_response_ack <= 1;
+	    snoop_response_hit <= 0;
+	    snoop_response_dat_o <= {OPTION_OPERAND_WIDTH{1'b0}};
+	  end else if (snoop_address_conflict | (!snoop_address_conflict & dc_snoop_valid_dat)) begin
+	    // Write down that we have had a hit, only when the data is available
+	    snoop_response_ack <= 1;
+	    snoop_response_hit <= 1;
+	    snoop_response_dat_o <= snoop_address_conflict ? snoop_dat : dc_snoop_dat_wire;
+	  end
     // The request will be ended by deasserting the snoop_req_i signal
     if (!snoop_req_i) begin
         // Unlock the dcache
         dc_snoop_ack <= 1;
-        // Return to IDLE state
-        state <= IDLE;
+        if (snoop_on_refill) begin
+        	// Return to DC_REFILL state
+        	state <= DC_REFILL;
+        end else begin
+	        // Return to IDLE state
+	        state <= IDLE;
+	    end
         // Reset the outputs
         snoop_response_ack <= 0;
         snoop_response_hit <= 0;
@@ -756,7 +752,7 @@ endgenerate
    assign dc_req = ctrl_op_lsu & dc_access & !access_done & !dbus_stall &
        !(dbus_atomic & dbus_we & !atomic_reserve);
    assign dc_refill_allowed = !(ctrl_op_lsu_store_i | state == WRITE) &
-            !dc_snoop_hit;
+            !dc_snoop_hit /*& !snoop_valid*/;
 
 generate
 if (FEATURE_DATACACHE!="NONE") begin : dcache_gen
