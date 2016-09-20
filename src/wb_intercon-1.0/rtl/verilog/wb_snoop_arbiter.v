@@ -165,7 +165,7 @@ module wb_snoop_arbiter
    assign wbm_ack_o = (poll_response_flag == POLL_RESPONSE_POSITIVE) ? 
                           1 << saved_master_sel :
                           (state == MEM_ACCESS) ?
-                              (wbs_ack_i & active) << saved_master_sel :
+                              (wbs_ack_i & active) << master_sel :
                               (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ? 0 :
                               (wbs_ack_i & active) << master_sel;
 
@@ -178,7 +178,7 @@ module wb_snoop_arbiter
 
 
    assign end_of_transaction = ( (state == SNOOP_READ && wbm_cyc_i[saved_master_sel]==0) ||
-                                 (state == MEM_ACCESS && wbm_cyc_i[master_sel]==0) ) ? 1 : 0;
+                                 (state == MEM_ACCESS && wbm_cyc_i[saved_master_sel]==0) ) ? 1 : 0;
 
    assign snoop_type = (state == SNOOP_READ ) ? SNOOP_TYPE_READ : SNOOP_TYPE_IDLE ;
 
@@ -191,44 +191,55 @@ module wb_snoop_arbiter
       //reset condition
       if(wb_rst_i)
       begin
-         next_state = IDLE;
+         next_state <= IDLE;
       end
-      saved_master_sel = 0;
       case(state)
          IDLE:
          begin
-            next_state = IDLE;
             if(active==1 && wbm_we_i[master_sel]==0 && wbm_cyc_i[master_sel]==1 && master_sel < num_dbus && wbm_ack_o[master_sel]==0)
             begin
-              //$display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, num_dbus:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, num_dbus, wbm_cyc_i);
-               next_state = SNOOP_READ;
-               saved_master_sel = master_sel;
+               $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, num_dbus:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, num_dbus, wbm_cyc_i);
+               next_state <= SNOOP_READ;
+               saved_master_sel <= master_sel;
+            end
+            else
+            begin
+              next_state <= IDLE;
             end
          end
          SNOOP_READ:
          begin
-            next_state = SNOOP_READ;
             if(end_of_transaction)
             begin
-               next_state = IDLE;
+               next_state <= IDLE;
             end
-            if(poll_response_flag == POLL_RESPONSE_NEGATIVE)
+            else
             begin
-               next_state = MEM_ACCESS;
+              if(poll_response_flag == POLL_RESPONSE_NEGATIVE)
+              begin
+                next_state <= MEM_ACCESS;
+              end
+              else
+              begin
+                next_state <= SNOOP_READ;
+              end
             end
          end
          MEM_ACCESS:
          begin
-            next_state = MEM_ACCESS;
-            if(end_of_transaction==1)
-            begin
-               next_state = IDLE;
-            end
+          if(end_of_transaction==1)
+          begin
+            next_state <= IDLE;
+          end
+          else
+          begin
+            next_state <= MEM_ACCESS;
+          end
          end
          default:
          begin
-            next_state = IDLE;
-            saved_master_sel = 0;
+            next_state <= IDLE;
+            saved_master_sel <= 0;
          end
       endcase
    end
