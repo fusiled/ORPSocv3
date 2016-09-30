@@ -132,8 +132,8 @@ module wb_snoop_arbiter
    wire end_of_transaction;
 
    //patch to simplify the poll_response assignment
-   wire snoop_mask;
-   wire snoop_type;
+   wire [num_dbus-1:0]snoop_mask;
+   wire [num_dbus-1:0]snoop_type;
 
    
    arbiter
@@ -180,9 +180,9 @@ module wb_snoop_arbiter
    assign end_of_transaction = ( (state == SNOOP_READ && wbm_cyc_i[saved_master_sel]==0) ||
                                  (state == MEM_ACCESS && wbm_cyc_i[saved_master_sel]==0) ) ? 1 : 0;
 
-   assign snoop_type = (state == SNOOP_READ ) ? SNOOP_TYPE_READ : SNOOP_TYPE_IDLE ;
+   assign snoop_type = (state == SNOOP_READ ) ? {num_dbus{SNOOP_TYPE_READ}} & ~((1'b1)<<saved_master_sel) : SNOOP_TYPE_IDLE ;
 
-   assign snoop_mask = 1<<saved_master_sel;
+   assign snoop_mask = state==SNOOP_READ ? 1<<saved_master_sel : {num_dbus{1'b0}};
 
 
    //FSM that controls next_state variable and then the state register.
@@ -282,7 +282,7 @@ module wb_snoop_arbiter
    always@(*)
    begin
       snooped_dat=0;
-      if(snoop_type_o==SNOOP_TYPE_READ)
+      if(state==SNOOP_READ)
       begin: snoop_read_active
          integer k;
          poll_response_flag = POLL_RESPONSE_UNDEFINED;
@@ -297,7 +297,7 @@ module wb_snoop_arbiter
                end
             end
          end
-         if(snoop_ack_i | snoop_mask == {num_dbus{1'b1}} && snoop_hit_i==0 && poll_response_flag == POLL_RESPONSE_UNDEFINED)
+         if( ((snoop_ack_i | snoop_mask) == {num_dbus{1'b1}}) && snoop_hit_i=={num_dbus {1'b0} } && poll_response_flag == POLL_RESPONSE_UNDEFINED)
          begin
             poll_response_flag = POLL_RESPONSE_NEGATIVE;
          end
