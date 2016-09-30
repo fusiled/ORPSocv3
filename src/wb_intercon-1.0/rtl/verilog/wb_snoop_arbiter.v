@@ -198,7 +198,7 @@ module wb_snoop_arbiter
          begin
             if(active==1 && wbm_we_i[master_sel]==0 && wbm_cyc_i[master_sel]==1 && master_sel < num_dbus && wbm_ack_o[master_sel]==0)
             begin
-               $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, num_dbus:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, num_dbus, wbm_cyc_i);
+               $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, wbm_cyc_i);
                next_state <= SNOOP_READ;
                saved_master_sel <= master_sel;
             end
