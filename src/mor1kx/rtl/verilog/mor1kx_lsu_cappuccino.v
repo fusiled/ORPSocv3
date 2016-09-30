@@ -217,6 +217,7 @@ module mor1kx_lsu_cappuccino
    reg [OPTION_OPERAND_WIDTH-1:0] snoop_dat;
    reg          snoop_address_conflict;
    reg 			snoop_on_refill;
+   reg 			snoop_on_write;
 
    reg          snoop_response_hit;
    reg          snoop_response_ack;
@@ -428,6 +429,7 @@ module mor1kx_lsu_cappuccino
      snoop_response_ack <= 0;
      snoop_response_hit <= 0;
      snoop_on_refill <= 0;
+     snoop_on_write <= 0;
      snoop_address_conflict <= 0;
       // The first time we reach the idle state we handle the snoop requests, if any
       // Note: to avoid a conflict, we check that the store buffer is empty.
@@ -533,6 +535,13 @@ module mor1kx_lsu_cappuccino
        write_done <= 1;
         end
      end
+
+     // If during a write we receive a snoop request we immediately handle that
+     // request and then we can continue with our write operation.
+     if (snoop_req_i) begin
+     	snoop_on_write <= 1;
+     	state <= SNOOP_MANAGEMENT;
+     end
   end
 
   TLB_RELOAD: begin
@@ -580,6 +589,13 @@ module mor1kx_lsu_cappuccino
         if (snoop_on_refill) begin
         	// Return to DC_REFILL state
         	state <= DC_REFILL;
+        	// Reset the signal
+        	snoop_on_refill <= 0;
+        end else if (snoop_on_write) begin
+        	// Return to WRITE state
+        	state <= WRITE;
+        	// Reset the signal
+        	snoop_on_write <= 0;
         end else begin
 	        // Return to IDLE state
 	        state <= IDLE;
