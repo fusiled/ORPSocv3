@@ -218,6 +218,7 @@ module mor1kx_lsu_cappuccino
    reg          snoop_address_conflict;
    reg 			snoop_on_refill;
    reg 			snoop_on_write;
+   reg 			snoop_req_delayed;
 
    reg          snoop_response_hit;
    reg          snoop_response_ack;
@@ -430,7 +431,7 @@ module mor1kx_lsu_cappuccino
      snoop_response_hit <= 0;
      snoop_on_refill <= 0;
      snoop_on_write <= 0;
-     snoop_address_conflict <= 0;
+     //snoop_address_conflict <= 0;
       // The first time we reach the idle state we handle the snoop requests, if any
       // Note: to avoid a conflict, we check that the store buffer is empty.
       // This conflict happens when the snoop address is the same of the last data
@@ -495,9 +496,11 @@ module mor1kx_lsu_cappuccino
      if (dbus_err_i | dc_snoop_hit) begin
         dbus_req_o <= 0;
         state <= IDLE;
-     end else if (snoop_req_i) begin
+     end else if (snoop_req_delayed) begin
      	// Go into the snoop_management state with a special signal asserted
      	// In this way we do not block the refill in case of non snoop hits
+     	// The request has been delayed of one clock cycle to allow the data cache
+     	// to fullfil the snoop checkings.
      	snoop_on_refill <= 1;
      	state <= SNOOP_MANAGEMENT;
      end
@@ -882,38 +885,49 @@ end
 endgenerate
 
 // Snoop request arrival's logic
-always @(posedge snoop_req_i) begin : check_snoop_conflict_
-  //set default snoop_dat
-  snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
-  //
-  // Here a snoop request has still been raised, thus we have to check for
-  // eventual conflicts:
-  //    - first, the address in which we are writing (thus the data coming
-  //  out from the store buffer) is the same of the snoop request.
-  //    - second, the address of the data we are saving into the store 
-  //  buffer is the same of the snoop request.
-  //
-  //  Note that if we do not have a store buffer, only the first check makes
-  //  sense, since the data to be stored are directly written on the bus.
-  //
-  if(state == WRITE && snoop_adr_i == dbus_adr) begin
-    // We are writing the requested data on the bus, thus we have already 
-    // the snooped data for handling the request in the FSM.
-    snoop_address_conflict <= 1;
-    snoop_dat <= dbus_dat;
-  end else
-  if (FEATURE_STORE_BUFFER != "NONE" && snoop_adr_i == store_buffer_wadr) begin
-    // We are writing the requested data into the store buffer, thus we
-    // have already the snooped data.
-    // WARNING: This kind of checks are formally correct ONLY under the
-    // current implementation of a write-trought cache, i.e., the store
-    // buffer will have at most one item.
-    snoop_address_conflict <= 1;
-    // The data we are storing into the store buffer is into the wire lsu_sdat
-    snoop_dat <= lsu_sdat;
-  end else begin
-    snoop_address_conflict <= 0;
-  end
+// It also includes the end of request logic.
+always @(snoop_req_i) begin : check_snoop_conflict_
+	// Posedge
+	if (snoop_req_i) begin
+		  //set default snoop_dat
+		  snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+		  //
+		  // Here a snoop request has still been raised, thus we have to check for
+		  // eventual conflicts:
+		  //    - first, the address in which we are writing (thus the data coming
+		  //  out from the store buffer) is the same of the snoop request.
+		  //    - second, the address of the data we are saving into the store 
+		  //  buffer is the same of the snoop request.
+		  //
+		  //  Note that if we do not have a store buffer, only the first check makes
+		  //  sense, since the data to be stored are directly written on the bus.
+		  //
+		  if(state == WRITE && snoop_adr_i == dbus_adr) begin
+		    // We are writing the requested data on the bus, thus we have already 
+		    // the snooped data for handling the request in the FSM.
+		    snoop_address_conflict <= 1;
+		    snoop_dat <= dbus_dat;
+		  end else
+		  if (FEATURE_STORE_BUFFER != "NONE" && snoop_adr_i == store_buffer_wadr) begin
+		    // We are writing the requested data into the store buffer, thus we
+		    // have already the snooped data.
+		    // WARNING: This kind of checks are formally correct ONLY under the
+		    // current implementation of a write-trought cache, i.e., the store
+		    // buffer will have at most one item.
+		    snoop_address_conflict <= 1;
+		    // The data we are storing into the store buffer is into the wire lsu_sdat
+		    snoop_dat <= lsu_sdat;
+		  end else begin
+		    snoop_address_conflict <= 0;
+		  end
+		  // Finally the one cycle delayed request's signal is set to one 
+		  snoop_req_delayed <= 1;
+	end else begin
+		// Negedge logic
+		snoop_address_conflict <= 0;
+		snoop_dat <= {OPTION_OPERAND_WIDTH{1'b0}};
+		snoop_req_delayed <= 0;
+	end
 end
 
 
