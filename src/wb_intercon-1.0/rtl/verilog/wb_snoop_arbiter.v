@@ -153,7 +153,7 @@ module wb_snoop_arbiter
    assign wbs_sel_o = wbm_sel_i[master_sel*4+:4];
    assign wbs_we_o  = wbm_we_i [master_sel];
    assign wbs_cyc_o = (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ||
-                      (state == SNOOP_READ) ? 0 : wbm_cyc_i[master_sel] & active;
+                      (state == SNOOP_READ) ? 1'b0 : wbm_cyc_i[master_sel] & active;
    assign wbs_stb_o = wbm_stb_i[master_sel];
    assign wbs_cti_o = wbm_cti_i[master_sel*3+:3];
    assign wbs_bte_o = wbm_bte_i[master_sel*2+:2];
@@ -166,7 +166,7 @@ module wb_snoop_arbiter
                           1 << saved_master_sel :
                           (state == MEM_ACCESS) ?
                               (wbs_ack_i & active) << master_sel :
-                              (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ? 0 :
+                              (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ? {num_masters{1'b0}} :
                               (wbs_ack_i & active) << master_sel;
 
    assign wbm_err_o = ((wbs_err_i & active) << master_sel);
@@ -178,7 +178,7 @@ module wb_snoop_arbiter
 
 
    assign end_of_transaction = ( (state == SNOOP_READ && wbm_cyc_i[saved_master_sel]==0) ||
-                                 (state == MEM_ACCESS && wbm_cyc_i[saved_master_sel]==0) ) ? 1 : 0;
+                                 (state == MEM_ACCESS && wbm_cyc_i[saved_master_sel]==0) ) ? 1'b1 : 1'b0;
 
    assign snoop_type = (state == SNOOP_READ ) ? {num_dbus{SNOOP_TYPE_READ}} & ~((1'b1)<<saved_master_sel) : SNOOP_TYPE_IDLE ;
 
@@ -192,56 +192,60 @@ module wb_snoop_arbiter
       if(wb_rst_i)
       begin
          next_state <= IDLE;
+         saved_master_sel <= master_sel;
       end
-      case(state)
-         IDLE:
-         begin
-            if(active==1 && wbm_we_i[master_sel]==0 && wbm_cyc_i[master_sel]==1 && master_sel < num_dbus && wbm_ack_o[master_sel]==0)
-            begin
-               $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, wbm_cyc_i);
-               next_state <= SNOOP_READ;
-               saved_master_sel <= master_sel;
-            end
-            else
-            begin
-              next_state <= IDLE;
-            end
-         end
-         SNOOP_READ:
-         begin
-            if(end_of_transaction)
-            begin
-               next_state <= IDLE;
-            end
-            else
-            begin
-              if(poll_response_flag == POLL_RESPONSE_NEGATIVE)
+      else
+      begin
+        case(state)
+           IDLE:
+           begin
+              if(active==1 && wbm_we_i[master_sel]==0 && wbm_cyc_i[master_sel]==1 && master_sel < num_dbus && wbm_ack_o[master_sel]==0)
               begin
-                next_state <= MEM_ACCESS;
+                 $display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, wbm_cyc_i);
+                 next_state <= SNOOP_READ;
+                 saved_master_sel <= master_sel;
               end
               else
               begin
-                next_state <= SNOOP_READ;
+                next_state <= IDLE;
               end
+           end
+           SNOOP_READ:
+           begin
+              if(end_of_transaction)
+              begin
+                 next_state <= IDLE;
+              end
+              else
+              begin
+                if(poll_response_flag == POLL_RESPONSE_NEGATIVE)
+                begin
+                  next_state <= MEM_ACCESS;
+                end
+                else
+                begin
+                  next_state <= SNOOP_READ;
+                end
+              end
+           end
+           MEM_ACCESS:
+           begin
+            if(end_of_transaction==1)
+            begin
+              next_state <= IDLE;
             end
-         end
-         MEM_ACCESS:
-         begin
-          if(end_of_transaction==1)
-          begin
-            next_state <= IDLE;
-          end
-          else
-          begin
-            next_state <= MEM_ACCESS;
-          end
-         end
-         default:
-         begin
-            next_state <= IDLE;
-            saved_master_sel <= 0;
-         end
-      endcase
+            else
+            begin
+              next_state <= MEM_ACCESS;
+            end
+           end
+           default:
+           begin
+              next_state <= IDLE;
+              saved_master_sel <= 0;
+           end
+        endcase
+      end
    end
 
    always@(*)
