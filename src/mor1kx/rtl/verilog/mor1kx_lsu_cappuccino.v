@@ -429,8 +429,8 @@ module mor1kx_lsu_cappuccino
      // Reset snoop wires
      snoop_response_ack <= 0;
      snoop_response_hit <= 0;
-     snoop_on_refill <= 0;
-     snoop_on_write <= 0;
+     //snoop_on_refill <= 0;
+     //snoop_on_write <= 0;
      //snoop_address_conflict <= 0;
       // The first time we reach the idle state we handle the snoop requests, if any
       // Note: to avoid a conflict, we check that the store buffer is empty.

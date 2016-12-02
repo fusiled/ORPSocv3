@@ -1,0 +1,123 @@
+[*]
+[*] GTKWave Analyzer v3.3.76 (w)1999-2016 BSI
+[*] Thu Dec  1 13:39:24 2016
+[*]
+[dumpfile] "/home/fusiled/Desktop/orpsocV3/build/trace.vcd"
+[dumpfile_mtime] "Wed Nov 30 07:21:34 2016"
+[dumpfile_size] 2987130
+[savefile] "/home/fusiled/Desktop/orpsocV3/flag.gtkw"
+[timestart] 30488
+[size] 1366 742
+[pos] -1 -1
+*-7.000000 30698 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] orpsoc_coherent_tb.
+[treeopen] orpsoc_coherent_tb.dut.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.
+[treeopen] orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.
+[treeopen] orpsoc_coherent_tb.dut.wb_bfm_memory0.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.
+[treeopen] orpsoc_coherent_tb.gen_monitor[0].
+[treeopen] orpsoc_coherent_tb.gen_monitor[1].
+[sst_width] 260
+[signals_width] 381
+[sst_expanded] 1
+[sst_vpaned_height] 293
+@28
+orpsoc_coherent_tb.dut.or1k_clk[0]
+@800200
+-core0
+@820
+orpsoc_coherent_tb.gen_monitor[0].i_monitor.execute_insn_disas[1:640]
+@c00200
+-core0 flags
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.monitor_flag[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.monitor_flag_clear[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.monitor_flag_set[0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.monitor_flag_sr[0]
+@1401200
+-core0 flags
+@1000200
+-core0
+@c00200
+-core0 rf
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.rfa_i[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rfa_ram_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rfa_rdad[5:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wradr[5:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wrdat[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wren[0]
+@1401200
+-core0 rf
+@22
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.lsu_result_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_ldat[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_adr[31:0]
+orpsoc_coherent_tb.dut.gen_cores[0].mor1kx0.dwbm_dat_i[31:0]
+@800200
+-cor1
+@820
+orpsoc_coherent_tb.gen_monitor[1].i_monitor.execute_insn_disas[1:640]
+@c00200
+-core1 flags
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.monitor_flag[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.monitor_flag_clear[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.monitor_flag_set[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.monitor_flag_sr[0]
+@1401200
+-core1 flags
+@c00200
+-core1 exec alu
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.flag_set_o[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.fpu_op_is_cmp[0]
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.opc_alu_secondary_i[3:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.op_setflag_i[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.flag_set[0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.a_eq_b[0]
+@1401200
+-core1 exec alu
+@800200
+-core1 rf
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_execute_alu.rfa_i[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rfa_ram_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rfa_rdad[5:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wradr[5:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wrdat[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.rf_wren[0]
+@1000200
+-core1 rf
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.lsu_result_o[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_ldat[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_adr[31:0]
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.dwbm_dat_i[31:0]
+@1000200
+-cor1
+@22
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.cpu_adr_i[31:0]
+@23
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.wradr_i[31:0]
+@28
+orpsoc_coherent_tb.dut.gen_cores[1].mor1kx0.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dcache_gen.mor1kx_dcache.we_i[0]
+[pattern_trace] 1
+[pattern_trace] 0

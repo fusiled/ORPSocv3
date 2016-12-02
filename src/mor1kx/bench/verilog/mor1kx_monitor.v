@@ -32,7 +32,7 @@
 `define OR1K_XSYNC_OP_POS 25:21
 
 module mor1kx_monitor #(
-	parameter LOG_DIR= "../out",
+	parameter LOG_DIR= ".",
 	parameter CPU_INDEX=0) ();
 
 	//this code has been moved from out of the module inside.
@@ -55,15 +55,17 @@ module mor1kx_monitor #(
 `define GPR_GET(x) `CPU_INST.get_gpr(x)
 `define GPR_SET(x, y) `CPU_INST.set_gpr(x, y)
 
-
    // General output file descriptor
    integer    fgeneral = 0;
    integer    ftrace = 0;
    integer    insns = 0;
-   
+
+   reg[4*8:0] out_val;
+
    wire clk;
 
    parameter OPTION_OPERAND_WIDTH = 32;
+   localparam MAX_NAME_BITS = 6; 
    
    reg 	TRACE_ENABLE;
    initial TRACE_ENABLE = $test$plusargs("trace_enable");
@@ -74,13 +76,14 @@ module mor1kx_monitor #(
    assign clk = `CPU_clk;
 
    reg [63:0] cycle_counter = 0 ;
-   
    /* Log file management code */
    initial
      begin
+    get_cpu_ind_str(out_val);
 	$timeformat (-9, 2, " ns", 12);
-	fgeneral = $fopen({LOG_DIR,"/",`TEST_NAME_STRING,"-general.log"});
-	ftrace = $fopen({LOG_DIR,"/",`TEST_NAME_STRING,"-trace.log"});
+	fgeneral = $fopen({LOG_DIR,"/",out_val,"-general.log"});
+	//$display("general log at %s",{LOG_DIR,"/",out_val,"-general.log"});
+	ftrace = $fopen({LOG_DIR,"/",out_val,"-trace.log"});
      end
   
    /* Simulation support code */
@@ -101,14 +104,36 @@ module mor1kx_monitor #(
    always @(negedge `CPU_clk) begin
       
       cycle_counter = cycle_counter + 1;
-      
+    //if(cycle_counter > 10'd10000)
+    if(0)
+    begin
+	    if (`CPU_WRAPPER.mor1kx_cpu.cappuccino.mor1kx_cpu.mor1kx_rf_cappuccino.result_i === 1'bX)
+	    begin
+		    $display("[PROBLEM FOUND] result_i undefined");
+		    $finish;
+		end
+		if (`CPU_WRAPPER.cappuccino.mor1kx_cpu.mor1kx_lsu_cappuccino.dc_ldat[0] === 1'bx)
+		begin
+		   $display("[PROBLEM FOUND] core %d wrote xxxxx in register", CPU_INDEX);
+		   $finish; 
+		end
+	end
+
       if (`EXECUTE_STAGE_ADV)
 	begin
 	  insns = insns + 1;
 	  execute_insn = `EXECUTE_STAGE_INSN;
 
 	   if(TRACE_ENABLE)
-	     mor1k_trace_print(execute_insn, `CPU_SR, `EXECUTE_PC, `CPU_FLAG);
+	   	 begin
+	     	mor1k_trace_print(execute_insn, `CPU_SR, `EXECUTE_PC, `CPU_FLAG);
+	     	if(`EXECUTE_PC===1'bx)
+	     	begin
+	     		$display("ERROR. A REGISTER IS UNDEFINED! CHECK TRACE of %d", CPU_INDEX);
+	     		$finish;
+	     	end
+	 	 end
+
 	  
 	  // Check instructions for simulation controls
 	  if (execute_insn == 32'h15_00_00_01)
@@ -143,13 +168,21 @@ module mor1kx_monitor #(
 
 	  if (execute_insn == 32'h15_00_00_0c)
 	    begin
-	       // Silent exit
-	       $finish;
-	       
-	    end
-	  
+	       $display("Exiting due to specified instruction",);
+	       $finish;       
+	    end	  
        end // if (`EXECUTE_STAGE_ADV)
    end
+
+
+   task get_cpu_ind_str;
+   		output [4*8:0] out;
+   		begin
+   			$sformat(out,"%d",CPU_INDEX);
+   			//$display("%s",out);
+   			//assign out[7:0]="\0";
+   		end
+   endtask
    
    task mor1k_trace_print;
       input [31:0] insn;

@@ -241,8 +241,7 @@ module mor1kx_dcache
 
    genvar             i;
 
-   assign cpu_ack_o = ((read | refill) & hit & !write_pending |
-           refill_hit) & cpu_req_i & !snoop_hit;
+   assign cpu_ack_o = (read & hit & !write_pending) & cpu_req_i & !snoop_hit;
 
    assign tag_rindex = cpu_adr_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];
 

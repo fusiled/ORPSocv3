@@ -82,7 +82,7 @@ module orpsoc_tb;
 
 
   orpsoc_multi_top
-   #(.NUM_CORES (2),
+   #(.NUM_CORES (NUM_CORES),
     .MEM_PER_CORE(0))
    dut
      (.wb_clk_i (syst_clk),
