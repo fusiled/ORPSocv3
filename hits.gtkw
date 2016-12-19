@@ -1,0 +1,28 @@
+[*]
+[*] GTKWave Analyzer v3.3.76 (w)1999-2016 BSI
+[*] Sat Dec  3 15:45:32 2016
+[*]
+[dumpfile] "/home/fusiled/Desktop/orpsocV3/build/trace.vcd"
+[dumpfile_mtime] "Sat Dec  3 15:44:57 2016"
+[dumpfile_size] 4068921
+[savefile] "/home/fusiled/Desktop/orpsocV3/hits.gtkw"
+[timestart] 21347
+[size] 1000 600
+[pos] -1 -1
+*0.000000 21348 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] orpsoc_coherent_tb.
+[treeopen] orpsoc_coherent_tb.dut.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.
+[treeopen] orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.
+[sst_width] 260
+[signals_width] 149
+[sst_expanded] 1
+[sst_vpaned_height] 146
+@29
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_ack_i[1:0]
+@28
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_hit_i[1:0]
+@22
+orpsoc_coherent_tb.dut.wb_intercon0.wb_snoop_arbiter_mem.snoop_dat_i[63:0]
+[pattern_trace] 1
+[pattern_trace] 0

@@ -106,7 +106,6 @@ module wb_snoop_arbiter
    //This register proxies the wbm_cyc_i in the arbiter module. The idea is to
    //"trick" the arbiter as much as possible cycle, but also exploiting its
    //arbitration abilities.
-   reg [num_masters-1:0] arbiter_cyc;
    reg [aw-1:0] snoop_adr_reg;
 
    //Snoop params
@@ -128,7 +127,6 @@ module wb_snoop_arbiter
    //buffer register. It is needed to update the state
    reg [3:0] next_state;
 
-   reg [master_sel_bits-1:0] saved_master_sel;
    wire end_of_transaction;
 
    //patch to simplify the poll_response assignment
@@ -141,19 +139,18 @@ module wb_snoop_arbiter
    arbiter0
      (.clk (wb_clk_i),
       .rst (wb_rst_i),
-      .request (arbiter_cyc),
+      .request (wbm_cyc_i),
       .select (master_sel),
       .active (active));
 	  
    
 
    //output signals
-   assign wbs_adr_o = wbm_adr_i[master_sel*aw+:aw];
-   assign wbs_dat_o = wbm_dat_i[master_sel*dw+:dw];
-   assign wbs_sel_o = wbm_sel_i[master_sel*4+:4];
+   assign wbs_adr_o = (state == SNOOP_READ) ? {aw{1'b0}} : wbm_adr_i[master_sel*aw+:aw];
+   assign wbs_dat_o = (state == SNOOP_READ) ? {dw{1'b0}} : wbm_dat_i[master_sel*dw+:dw];
+   assign wbs_sel_o = (state == SNOOP_READ) ? {dw{1'b0}} : wbm_sel_i[master_sel*4+:4];
    assign wbs_we_o  = wbm_we_i [master_sel];
-   assign wbs_cyc_o = (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ||
-                      (state == SNOOP_READ) ? 1'b0 : wbm_cyc_i[master_sel] & active;
+   assign wbs_cyc_o = (state == SNOOP_READ) ? 1'b0 : wbm_cyc_i[master_sel] & active;
    assign wbs_stb_o = wbm_stb_i[master_sel];
    assign wbs_cti_o = wbm_cti_i[master_sel*3+:3];
    assign wbs_bte_o = wbm_bte_i[master_sel*2+:2];
@@ -162,12 +159,11 @@ module wb_snoop_arbiter
                            {num_masters{snooped_dat}} :
                            {num_masters{wbs_dat_i}};
 
-   assign wbm_ack_o = (poll_response_flag == POLL_RESPONSE_POSITIVE) ? 
-                          1 << saved_master_sel :
-                          (state == MEM_ACCESS) ?
-                              (wbs_ack_i & active) << master_sel :
-                              (state == IDLE && active==1 && wbm_we_i[master_sel]==0 && master_sel < num_dbus) ? {num_masters{1'b0}} :
-                              (wbs_ack_i & active) << master_sel;
+   assign wbm_ack_o = (state == SNOOP_READ) ?
+                      (poll_response_flag == POLL_RESPONSE_POSITIVE) ?
+                        1'b1<<master_sel :
+                        {num_dbus{1'b0}} :
+                      ((wbs_ack_i & active) << master_sel);
 
    assign wbm_err_o = ((wbs_err_i & active) << master_sel);
    assign wbm_rty_o = ((wbs_rty_i & active) << master_sel);
@@ -177,12 +173,12 @@ module wb_snoop_arbiter
    assign snoop_adr_o = {num_dbus{snoop_adr_reg}};
 
 
-   assign end_of_transaction = ( (state == SNOOP_READ && wbm_cyc_i[saved_master_sel]==0) ||
-                                 (state == MEM_ACCESS && wbm_cyc_i[saved_master_sel]==0) ) ? 1'b1 : 1'b0;
+   assign end_of_transaction = (( (state == SNOOP_READ && wbm_cyc_i[master_sel]==0) ||
+                                 (state == MEM_ACCESS && wbm_cyc_i[master_sel]==0) )) && active==1'b1 ? 1'b1 : 1'b0;
 
-   assign snoop_type = (state == SNOOP_READ ) ? {num_dbus{SNOOP_TYPE_READ}} & ~((1'b1)<<saved_master_sel) : SNOOP_TYPE_IDLE ;
+   assign snoop_type = (state == SNOOP_READ ) ? {num_dbus{SNOOP_TYPE_READ}} & ~((1'b1)<<master_sel) : SNOOP_TYPE_IDLE ;
 
-   assign snoop_mask = state==SNOOP_READ ? 1<<saved_master_sel : {num_dbus{1'b0}};
+   assign snoop_mask = state==SNOOP_READ ? 1<<master_sel : {num_dbus{1'b0}};
 
 
    //FSM that controls next_state variable and then the state register.
@@ -192,7 +188,6 @@ module wb_snoop_arbiter
       if(wb_rst_i)
       begin
          next_state <= IDLE;
-         saved_master_sel <= master_sel;
       end
       else
       begin
@@ -203,7 +198,6 @@ module wb_snoop_arbiter
               begin
                  //$display("switch to SNOOP_READ due to active:%b, wbm_we_i:%b, master_sel:%d, wbm_cyc_i: %b", active, wbm_we_i, master_sel, wbm_cyc_i);
                  next_state <= SNOOP_READ;
-                 saved_master_sel <= master_sel;
               end
               else
               begin
@@ -242,7 +236,6 @@ module wb_snoop_arbiter
            default:
            begin
               next_state <= IDLE;
-              saved_master_sel <= 0;
            end
         endcase
       end
@@ -251,7 +244,6 @@ module wb_snoop_arbiter
    always@(*)
    begin: fsm_sensitivity_block
       //don't interfere with memory access
-      arbiter_cyc <= wbm_cyc_i;
       snoop_adr_reg <= 0;
       //unless we change state!
       state <= next_state;
@@ -259,24 +251,19 @@ module wb_snoop_arbiter
          IDLE: 
          begin
             //don't interfere
-            arbiter_cyc <= wbm_cyc_i;
             snoop_adr_reg <= 0;
          end
          SNOOP_READ:
          begin
-            //block arbitration, save the selected core and the current request array
-            arbiter_cyc <= 0;
             snoop_adr_reg <= wbm_adr_i[master_sel*aw+:aw];
          end
          MEM_ACCESS: 
          begin
             //restore state before snoop read and access to memory
-            arbiter_cyc <= wbm_cyc_i;
             snoop_adr_reg <= 0;
          end
          default: 
          begin
-            arbiter_cyc <= wbm_cyc_i;
             snoop_adr_reg <= 0;
          end
       endcase
